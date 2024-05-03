@@ -2,8 +2,21 @@
 
 export DOCKER_BUILDKIT=1
 DLIB_DOCKER_BUILD_ARG+=(
+    # BuildKit cache
     "--build-arg"
     "BUILDKIT_INLINE_CACHE=1"
+
+    # Proxy config
+    "--build-arg"
+    "http_proxy"
+    "--build-arg"
+    "https_proxy"
+    "--build-arg"
+    "all_proxy"
+    "--build-arg"
+    "no_proxy"
+
+    # Dlib config
     "--build-arg"
     "DLIB_SOURCE_IMAGE"
     "--build-arg"

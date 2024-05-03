@@ -41,17 +41,21 @@ dlib::plugin::bootloader::install() {
         "${DLIB_DISK_LOOPBACK_DEVICE}"
 
     # Generate config
-    # FIXME: disable os-prober
     >&2 printf "[*] GRUB: config\n"
-    # enable serial console
-    grep "GRUB_TERMINAL_INPUT" "${DLIB_MOUNT_ROOT}/etc/default/grub" \
-        && sed -Ei'' 's/^#?GRUB_TERMINAL_INPUT=.*$/GRUB_TERMINAL_INPUT="console serial"/g' "${DLIB_MOUNT_ROOT}/etc/default/grub" \
-        || printf 'GRUB_TERMINAL_INPUT="console serial"\n' >> "${DLIB_MOUNT_ROOT}/etc/default/grub"
-    grep "GRUB_TERMINAL_OUTPUT" "${DLIB_MOUNT_ROOT}/etc/default/grub" \
-        && sed -Ei'' 's/^#?GRUB_TERMINAL_OUTPUT=.*$/GRUB_TERMINAL_OUTPUT="gfxterm serial"/g' "${DLIB_MOUNT_ROOT}/etc/default/grub" \
-        || printf 'GRUB_TERMINAL_OUTPUT="gfxterm serial"\n' >> "${DLIB_MOUNT_ROOT}/etc/default/grub"
-    # unset GRUB_TERMINAL: on EFI environments, GRUB_TERMINAL="console serial" leads to double outputs
+    local GRUB_CONFIG="${DLIB_MOUNT_ROOT}/etc/default/grub"
+    # Disable os-prober
+    grep "GRUB_DISABLE_OS_PROBER" "${GRUB_CONFIG}" \
+        && sed -Ei'' 's/^#?GRUB_DISABLE_OS_PROBER=.*$/GRUB_DISABLE_OS_PROBER="true"/g' "${GRUB_CONFIG}" \
+        || printf 'GRUB_DISABLE_OS_PROBER="true"\n' >> "${GRUB_CONFIG}"
+    # Enable serial console
+    grep "GRUB_TERMINAL_INPUT" "${GRUB_CONFIG}" \
+        && sed -Ei'' 's/^#?GRUB_TERMINAL_INPUT=.*$/GRUB_TERMINAL_INPUT="console serial"/g' "${GRUB_CONFIG}" \
+        || printf 'GRUB_TERMINAL_INPUT="console serial"\n' >> "${GRUB_CONFIG}"
+    grep "GRUB_TERMINAL_OUTPUT" "${GRUB_CONFIG}" \
+        && sed -Ei'' 's/^#?GRUB_TERMINAL_OUTPUT=.*$/GRUB_TERMINAL_OUTPUT="gfxterm serial"/g' "${GRUB_CONFIG}" \
+        || printf 'GRUB_TERMINAL_OUTPUT="gfxterm serial"\n' >> "${GRUB_CONFIG}"
+    # Unset GRUB_TERMINAL: on EFI environments, GRUB_TERMINAL="console serial" leads to double outputs
     # shellcheck disable=SC2016 # do not check for regex
-    sed -Ei 's/^GRUB_TERMINAL=(.*)$/#GRUB_TERMINAL=$1/g' "${DLIB_MOUNT_ROOT}/etc/default/grub"
+    sed -Ei 's/^GRUB_TERMINAL=(.*)$/#GRUB_TERMINAL=$1/g' "${GRUB_CONFIG}"
     PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH chroot "${DLIB_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o /boot/grub/grub.cfg
 }
