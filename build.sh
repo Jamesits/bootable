@@ -36,7 +36,7 @@ toolchain() {
 }
 
 # Create version info
-cat > "${DLIB_SCOPED_TMP_DIR}/lib-release" <<EOF
+cat > "${DLIB_SCOPED_TMP_DIR}/dlib-release" <<EOF
 GIT_COMMIT=$(git rev-parse HEAD)
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 GIT_STATUS=$(git diff --quiet && echo "clean" || echo "dirty")
@@ -54,7 +54,7 @@ dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_DISTROS_DIR}/${DLIB_D
 toolchain fallocate -l "${DLIB_DISK_SIZE}" "${DLIB_SCOPED_TMP_DIR}/boot.img"
 # Note: roughly follows the discoverable partitions specification
 toolchain sgdisk --zap-all --set-alignment=2048 --align-end --move-second-header --disk-guid=00000000-0000-0000-000000000000 \
-    -n "1:0:+1M"                          -c 1:grub  -t 1:21686148-6449-6E6F-744E-656564454649 \
+    -n "1:0:+2M"                          -c 1:grub  -t 1:21686148-6449-6E6F-744E-656564454649 \
     -n "2:0:+${DLIB_EFI_PARTITION_SIZE}"  -c 2:EFI   -t 2:C12A7328-F81F-11D2-BA4B-00A0C93EC93B \
     -n "3:0:+${DLIB_SWAP_PARTITION_SIZE}" -c 3:SWAP  -t 3:0657fd6d-a4ab-43c4-84e5-0933c84b4f4f \
     -n "4:0:0"                            -c 4:Linux -t 4:4f68bce3-e8cd-4db1-96e7-fbcaf984b709 \
@@ -89,12 +89,12 @@ toolchain mkswap "${DLIB_DISK_LOOPBACK_DEVICE}p3"
 >&2 printf "[*] Format: Root\n"
 toolchain mkfs -t ext4 "${DLIB_DISK_LOOPBACK_DEVICE}p4"
 
-# Create mount tree
+# Create mount tree for chrooting and initramfs builds
 >&2 printf "[*] Populate: /\n"
 mkdir -p "${DLIB_MOUNT_ROOT}"
 mount -t ext4 "${DLIB_DISK_LOOPBACK_DEVICE}p4" "${DLIB_MOUNT_ROOT}"
 toolchain tar --same-owner -pxf "${DLIB_SCOPED_TMP_DIR}/rootfs.tar" -C "${DLIB_MOUNT_ROOT}"
-install --owner=0 --group=0 --mode=644 --preserve-timestamps --target-directory="${DLIB_MOUNT_ROOT}/etc" "${DLIB_SCOPED_TMP_DIR}/lib-release"
+install --owner=0 --group=0 --mode=644 --preserve-timestamps --target-directory="${DLIB_MOUNT_ROOT}/etc" "${DLIB_SCOPED_TMP_DIR}/dlib-release"
 >&2 printf "[*] Populate: /boot/efi\n"
 mkdir -p "${DLIB_MOUNT_ROOT}/boot/efi"
 mount -t vfat "${DLIB_DISK_LOOPBACK_DEVICE}p2" "${DLIB_MOUNT_ROOT}/boot/efi"
