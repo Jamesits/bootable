@@ -15,15 +15,15 @@ RUN [ -f /etc/apt/sources.list.d/debian.sources ] && sed -Ei'' 's/^Components: .
 
 # Notes:
 # - grub-efi-amd64 and grub-pc conflict with each other; install *-bin works https://askubuntu.com/a/1253218; grub-cloud-amd64 does this automatically for us
-RUN apt update -y \
-    && apt install -y linux-image-amd64 firmware-linux-nonfree initramfs-tools grub-cloud-amd64 efibootmgr shim-signed mokutil systemd kmod locales \
+RUN apt-get update -y \
+    && apt-get install -y linux-image-amd64 firmware-linux-nonfree initramfs-tools grub-cloud-amd64 efibootmgr shim-signed mokutil systemd kmod locales \
     && rm -rf /var/lib/apt/lists/*
 
 ### default image ###
 FROM flavor-minimal as flavor-default
 
-RUN apt update -y \
-    && apt install -y qemu-guest-agent cloud-init openssh-server openssh-client vim mtr-tiny \
+RUN apt-get update -y \
+    && apt-get install -y qemu-guest-agent cloud-init openssh-server openssh-client vim mtr-tiny \
     && rm -rf /var/lib/apt/lists/*
 
 ### finalize ###
