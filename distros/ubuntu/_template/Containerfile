@@ -10,7 +10,8 @@ RUN rm -rf /etc/apt/apt.conf.d/docker-*
 # Notes:
 # - grub-pc and grub-efi-amd64 conflicts
 RUN apt-get update -y \
-    && apt-get install -y linux-generic initramfs-tools grub-pc grub-efi-amd64-bin efibootmgr shim-signed mokutil systemd kmod locales \
+    && (yes y | unminimize) \
+    && apt-get install -y linux-generic initramfs-tools grub-pc grub-efi-amd64-bin efibootmgr shim-signed mokutil systemd kmod locales ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ### default image ###

@@ -51,8 +51,9 @@ dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_DISTROS_DIR}/${DLIB_D
 
 # Create and partition the disk (offline)
 >&2 printf "[*] Creating the boot disk...\n"
+rm -f -- "${DLIB_SCOPED_TMP_DIR}/boot.img"
 toolchain fallocate -l "${DLIB_DISK_SIZE}" "${DLIB_SCOPED_TMP_DIR}/boot.img"
-# Note: roughly follows the discoverable partitions specification
+# Note: roughly follows the discoverable partitions specification while compatible with both EFI and legacy boot
 toolchain sgdisk --zap-all --set-alignment=2048 --align-end --move-second-header --disk-guid="R" \
     -n "1:0:+2M"                          -c "1:grub"  -t "1:21686148-6449-6E6F-744E-656564454649" \
     -n "2:0:+${DLIB_EFI_PARTITION_SIZE}"  -c "2:EFI"   -t "2:C12A7328-F81F-11D2-BA4B-00A0C93EC93B" \
