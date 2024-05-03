@@ -4,21 +4,25 @@ export DOCKER_BUILDKIT=1
 DLIB_DOCKER_BUILD_ARG+=(
     "--build-arg"
     "BUILDKIT_INLINE_CACHE=1"
+    "--build-arg"
+    "DLIB_SOURCE_IMAGE"
+    "--build-arg"
+    "DLIB_BUILD_FLAVOR"
 )
 
 # Usage: $0 <context-dir> <file> <output-tar>
 dlib::container::build::tar() {
     local REL_FILE
-    REL_FILE=$(realpath -s --relative-to="$1" "$2")
-    docker build --file="$REL_FILE" --output="type=tar,dest=$3" -- "$1"
+    REL_FILE=$(realpath --relative-to="$1" "$2")
+    docker build --file="$REL_FILE" --output="type=tar,dest=$3" "${DLIB_DOCKER_BUILD_ARG[@]}" -- "$1"
     return $?
 }
 
 # Usage: $0 <context-dir> <file> <output-tag>
 dlib::container::build::image() {
     local REL_FILE
-    REL_FILE=$(realpath -s --relative-to="$1" "$2")
-    docker build --file="$REL_FILE" --tag="$3" -- "$1"
+    REL_FILE=$(realpath --relative-to="$1" "$2")
+    docker build --file="$REL_FILE" --tag="$3" "${DLIB_DOCKER_BUILD_ARG[@]}" -- "$1"
     return $?
 }
 

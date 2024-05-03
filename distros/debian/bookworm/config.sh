@@ -5,3 +5,5 @@
 # load plugins
 . "${DLIB_PLUGINS_DIR}/plugin-initrd-initramfs-tools.sh"
 . "${DLIB_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
+
+export DLIB_SOURCE_IMAGE="registry.hub.docker.com/library/debian:bookworm-slim"
