@@ -1,0 +1,12 @@
+ARG LIB_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
+FROM $LIB_SOURCE_IMAGE
+
+# fix polkit permission problem on the default archlinux docker image
+RUN chmod 755 /usr/share/polkit-1/rules.d \
+    && chmod 755 /var/log/audit
+
+RUN pacman -Syu --noconfirm \
+    && pacman -S --noconfirm base linux linux-firmware mkinitcpio amd-ucode intel-ucode grub efibootmgr vim \
+    && rm -rf /var/cache/pacman/pkg/*
+
+RUN passwd -d root

@@ -6,6 +6,7 @@ Docker-based universal Linux image builder.
 
 Packages:
 - Docker (with buildx support)
+- Git
 
 Host OS assumptions:
 - Runs SystemD and udevd

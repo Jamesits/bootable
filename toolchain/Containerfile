@@ -1,0 +1,5 @@
+FROM debian:trixie-slim
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y \
+    && apt-get install -y coreutils gdisk mount util-linux parted kpartx git dosfstools e2fsprogs tar \
+    && rm -rf /var/lib/apt/lists/*
