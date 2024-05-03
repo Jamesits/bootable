@@ -1,5 +1,5 @@
-ARG LIB_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
-FROM $LIB_SOURCE_IMAGE
+ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
+FROM $DLIB_SOURCE_IMAGE
 
 # fix polkit permission problem on the default archlinux docker image
 RUN chmod 755 /usr/share/polkit-1/rules.d \

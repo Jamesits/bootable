@@ -1,13 +1,13 @@
 #!/hint/bash
 
 export DOCKER_BUILDKIT=1
-LIB_DOCKER_BUILD_ARG+=(
+DLIB_DOCKER_BUILD_ARG+=(
     "--build-arg"
     "BUILDKIT_INLINE_CACHE=1"
 )
 
 # Usage: $0 <context-dir> <file> <output-tar>
-container::build::tar() {
+dlib::container::build::tar() {
     local REL_FILE
     REL_FILE=$(realpath -s --relative-to="$1" "$2")
     docker build --file="$REL_FILE" --output="type=tar,dest=$3" -- "$1"
@@ -15,7 +15,7 @@ container::build::tar() {
 }
 
 # Usage: $0 <context-dir> <file> <output-tag>
-container::build::image() {
+dlib::container::build::image() {
     local REL_FILE
     REL_FILE=$(realpath -s --relative-to="$1" "$2")
     docker build --file="$REL_FILE" --tag="$3" -- "$1"
@@ -23,7 +23,7 @@ container::build::image() {
 }
 
 # Usage: $0 <tag> <working-dir> <cmd> [args...]
-container::exec() {
+dlib::container::exec() {
     local TAG=$1
     shift
     local PWD=$1

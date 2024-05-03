@@ -3,5 +3,5 @@
 # shellcheck disable=SC2034 # do not check for unused variables
 
 # load plugins
-. "${LIB_PLUGIN_DIR}/plugin-initrd-mkinitcpio.sh"
-. "${LIB_PLUGIN_DIR}/plugin-bootloader-grub.sh"
+. "${DLIB_PLUGIN_DIR}/plugin-initrd-mkinitcpio.sh"
+. "${DLIB_PLUGIN_DIR}/plugin-bootloader-grub.sh"
