@@ -1,0 +1,29 @@
+ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/debian:bookworm-slim
+ARG DLIB_BUILD_FLAVOR=default
+
+### minimal image ###
+FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+
+RUN \
+    # Remove Docker customizations
+    rm -rf /etc/apt/apt.conf.d/docker-* \
+    # Add repository components (deb822 style)
+    && sed -i -E 's/^Components: .*$/Components: main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
+
+# Note:
+# - grub-efi-amd64 and grub-pc conflict with each other; install *-bin works https://askubuntu.com/a/1253218; grub-cloud-amd64 does this automatically for us
+RUN apt update -y \
+    && apt install -y linux-image-amd64 firmware-linux-nonfree initramfs-tools grub-cloud-amd64 efibootmgr shim-signed mokutil systemd kmod \
+    && rm -rf /var/lib/apt/lists/*
+
+### default image ###
+FROM flavor-minimal as flavor-default
+
+RUN apt update -y \
+    && apt install -y qemu-guest-agent cloud-init openssh-server openssh-client vim mtr-tiny \
+    && rm -rf /var/lib/apt/lists/*
+
+### finalize ###
+FROM "flavor-$DLIB_BUILD_FLAVOR"
+
+RUN passwd -d root

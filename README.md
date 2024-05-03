@@ -11,3 +11,9 @@ Packages:
 Host OS assumptions:
 - Runs SystemD and udevd
 - For building CentOS 6 images: `vsyscall=emulate` in kernel command line
+
+## Building
+
+```shell
+sudo ./build.sh <distro>/<version>
+```

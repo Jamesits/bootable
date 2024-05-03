@@ -2,6 +2,7 @@
 # shellcheck disable=SC2034 # do not check for unused variables
 
 # Scratch directory location
+# Currently this directory should be inside $DLIB_PROJECT_ROOT
 DLIB_GLOBAL_TMP_DIR="${DLIB_PROJECT_ROOT}/tmp"
 
 # OS image disk size

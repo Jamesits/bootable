@@ -18,9 +18,10 @@ fi
 # Pull in default plugins
 . "${DLIB_PLUGINS_DIR}/plugin-ui-require-root.sh"
 . "${DLIB_PLUGINS_DIR}/plugin-runtime-docker.sh"
+. "${DLIB_PLUGINS_DIR}/plugin-fstab.sh"
 
 DLIB_DISTRO="${DLIB_DISTRO:-$1}"
->&2 printf "[i] Using DISTRO %s\n" "${DLIB_DISTRO}"
+>&2 printf "[i] Using distro %s\n" "${DLIB_DISTRO}"
 DLIB_SCOPED_TMP_DIR="${DLIB_GLOBAL_TMP_DIR}/${DLIB_DISTRO}"
 
 mkdir -p "${DLIB_SCOPED_TMP_DIR}"
@@ -51,11 +52,12 @@ dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_DISTROS_DIR}/${DLIB_D
 # Create and partition the disk (offline)
 >&2 printf "[*] Creating the boot disk...\n"
 toolchain fallocate -l "${DLIB_DISK_SIZE}" "${DLIB_SCOPED_TMP_DIR}/boot.img"
+# Note: roughly follows the discoverable partitions specification
 toolchain sgdisk --zap-all --set-alignment=2048 --align-end --move-second-header --disk-guid=00000000-0000-0000-000000000000 \
-    -n "1:0:+1M"                         -c 1:grub  -t 1:21686148-6449-6E6F-744E-656564454649 \
+    -n "1:0:+1M"                          -c 1:grub  -t 1:21686148-6449-6E6F-744E-656564454649 \
     -n "2:0:+${DLIB_EFI_PARTITION_SIZE}"  -c 2:EFI   -t 2:C12A7328-F81F-11D2-BA4B-00A0C93EC93B \
     -n "3:0:+${DLIB_SWAP_PARTITION_SIZE}" -c 3:SWAP  -t 3:0657fd6d-a4ab-43c4-84e5-0933c84b4f4f \
-    -n "4:0:0"                           -c 4:Linux -t 4:4f68bce3-e8cd-4db1-96e7-fbcaf984b709 \
+    -n "4:0:0"                            -c 4:Linux -t 4:4f68bce3-e8cd-4db1-96e7-fbcaf984b709 \
     "${DLIB_SCOPED_TMP_DIR}/boot.img"
 toolchain sgdisk --info "${DLIB_SCOPED_TMP_DIR}/boot.img"
 
@@ -111,7 +113,8 @@ hook() {
     "dlib::$1"
 }
 # TODO: Network manager
-# TODO: fstab
+# fstab
+hook "plugin::fstab::generate"
 # initrd
 hook "plugin::initrd::generate"
 # Bootloader

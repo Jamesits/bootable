@@ -9,17 +9,18 @@ RUN chmod 755 /usr/share/polkit-1/rules.d \
     && chmod 755 /var/log/audit
 
 RUN pacman -Syu --noconfirm \
-    && pacman -S --noconfirm base linux linux-firmware mkinitcpio amd-ucode intel-ucode grub efibootmgr \
+    && pacman -S --noconfirm base linux linux-firmware mkinitcpio amd-ucode intel-ucode grub efibootmgr shim mokutil \
     && rm -rf /var/cache/pacman/pkg/*
 
 ### default image ###
 FROM flavor-minimal as flavor-default
 
 RUN pacman -Syu --noconfirm \
-    && pacman -S --noconfirm qemu-guest-agent vim \
+    && pacman -S --noconfirm qemu-guest-agent cloud-init openssh vim mtr \
     && rm -rf /var/cache/pacman/pkg/*
 
 ### finalize ###
 FROM "flavor-$DLIB_BUILD_FLAVOR"
 
+# TODO: fix timezone info
 RUN passwd -d root
