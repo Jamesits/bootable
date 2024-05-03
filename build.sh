@@ -5,26 +5,26 @@ set -Eeuo pipefail
 # The directory where this script resides
 # This variable must be set before config.sh
 DLIB_PROJECT_ROOT="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)"
-DLIB_PLUGIN_DIR="${DLIB_PROJECT_ROOT}/scripts"
-DLIB_FLAVOR_DIR="${DLIB_PROJECT_ROOT}/flavors"
+DLIB_PLUGINS_DIR="${DLIB_PROJECT_ROOT}/scripts"
+DLIB_DISTROS_DIR="${DLIB_PROJECT_ROOT}/distros"
 
 # Pull in global config variables
-. "${DLIB_PLUGIN_DIR}/config.sh"
+. "${DLIB_PLUGINS_DIR}/config.sh"
 
 if [ "$DLIB_BUILD_NOCACHE" == "1" ]; then
     DLIB_DOCKER_BUILD_ARGS+=("--no-cache" "--pull")
 fi
 
 # Pull in default plugins
-. "${DLIB_PLUGIN_DIR}/plugin-ui-require-root.sh"
-. "${DLIB_PLUGIN_DIR}/plugin-runtime-docker.sh"
+. "${DLIB_PLUGINS_DIR}/plugin-ui-require-root.sh"
+. "${DLIB_PLUGINS_DIR}/plugin-runtime-docker.sh"
 
-DLIB_FLAVOR="${DLIB_FLAVOR:-$1}"
->&2 printf "[i] Using flavor %s\n" "${DLIB_FLAVOR}"
-DLIB_SCOPED_TMP_DIR="${DLIB_GLOBAL_TMP_DIR}/${DLIB_FLAVOR}"
+DLIB_DISTRO="${DLIB_DISTRO:-$1}"
+>&2 printf "[i] Using DISTRO %s\n" "${DLIB_DISTRO}"
+DLIB_SCOPED_TMP_DIR="${DLIB_GLOBAL_TMP_DIR}/${DLIB_DISTRO}"
 
 mkdir -p "${DLIB_SCOPED_TMP_DIR}"
-. "${DLIB_FLAVOR_DIR}/${DLIB_FLAVOR}/config.sh"
+. "${DLIB_DISTROS_DIR}/${DLIB_DISTRO}/config.sh"
 
 # Build the toolchain
 DLIB_TOOLCHAIN_DIR="${DLIB_PROJECT_ROOT}/toolchain"
@@ -45,8 +45,8 @@ BUILD_HOSTNAME=$(toolchain uname -n)
 EOF
 
 # Build the OS image
->&2 printf "[*] Build: OS image %s...\n" "${DLIB_FLAVOR}"
-dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_FLAVOR_DIR}/${DLIB_FLAVOR}/Containerfile" "${DLIB_SCOPED_TMP_DIR}/rootfs.tar"
+>&2 printf "[*] Build: OS image %s...\n" "${DLIB_DISTRO}"
+dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_DISTROS_DIR}/${DLIB_DISTRO}/Containerfile" "${DLIB_SCOPED_TMP_DIR}/rootfs.tar"
 
 # Create and partition the disk (offline)
 >&2 printf "[*] Creating the boot disk...\n"
