@@ -53,7 +53,7 @@ dlib::container::build::tar "${DLIB_PROJECT_ROOT}" "${DLIB_DISTROS_DIR}/${DLIB_D
 >&2 printf "[*] Creating the boot disk...\n"
 toolchain fallocate -l "${DLIB_DISK_SIZE}" "${DLIB_SCOPED_TMP_DIR}/boot.img"
 # Note: roughly follows the discoverable partitions specification
-toolchain sgdisk --zap-all --set-alignment=2048 --align-end --move-second-header --disk-guid="00000000-0000-0000-000000000000" \
+toolchain sgdisk --zap-all --set-alignment=2048 --align-end --move-second-header --disk-guid="R" \
     -n "1:0:+2M"                          -c "1:grub"  -t "1:21686148-6449-6E6F-744E-656564454649" \
     -n "2:0:+${DLIB_EFI_PARTITION_SIZE}"  -c "2:EFI"   -t "2:C12A7328-F81F-11D2-BA4B-00A0C93EC93B" \
     -n "3:0:+${DLIB_SWAP_PARTITION_SIZE}" -c "3:SWAP"  -t "3:0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" \
@@ -98,20 +98,30 @@ install --owner=0 --group=0 --mode=644 --preserve-timestamps --target-directory=
 >&2 printf "[*] Populate: /boot/efi\n"
 mkdir -p "${DLIB_MOUNT_ROOT}/boot/efi"
 mount -t vfat "${DLIB_DISK_LOOPBACK_DEVICE}p2" "${DLIB_MOUNT_ROOT}/boot/efi"
->&2 printf "[*] Populate: /dev\n"
-mount --bind /dev "${DLIB_MOUNT_ROOT}/dev"
->&2 printf "[*] Populate: /proc\n"
-mount --bind /proc "${DLIB_MOUNT_ROOT}/proc"
->&2 printf "[*] Populate: /sys\n"
-mount --bind /sys "${DLIB_MOUNT_ROOT}/sys"
->&2 printf "[*] Populate: /tmp\n"
-mount -t tmpfs tmpfs "${DLIB_MOUNT_ROOT}/tmp"
+mount_tmpfs() {
+    >&2 printf "[*] Populate: %s\n" "$1"
+    mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+    mount -t tmpfs tmpfs "${DLIB_MOUNT_ROOT}$1"
+}
+mount_bind() {
+    >&2 printf "[*] Populate: %s\n" "$1"
+    mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+    mount --bind "$1" "${DLIB_MOUNT_ROOT}$1"
+    mount --make-rslave "${DLIB_MOUNT_ROOT}$1"
+}
+mount_bind /dev
+mount_bind /proc
+mount_tmpfs /run
+mount_bind /run/udev # https://wiki.gentoo.org/wiki/GRUB#os-prober_and_UEFI_in_chroot
+mount_bind /sys
+mount_tmpfs /tmp
 
 # Post-install hooks
 hook() {
     >&2 printf "[*] Hook: %s\n" "$1"
     "dlib::$1"
 }
+# TODO: locale-gen
 # TODO: Network manager
 # fstab
 hook "plugin::fstab::generate"
