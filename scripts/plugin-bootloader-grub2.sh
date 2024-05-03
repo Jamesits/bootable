@@ -116,6 +116,7 @@ EOF
         # Caveats for Canonical signed GRUB2 loader:
         # - `/boot/efi/EFI/$id` will be a special phase 1 config
         # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
+        # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
         # https://askubuntu.com/a/1406590
         mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}"
         # _grub2_generate_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}"
