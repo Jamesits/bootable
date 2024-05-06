@@ -21,4 +21,3 @@ sudo ./build.sh <distro>/<version>
 ## Known Issues
 
 - Ubuntu bionic: EFI boot does not work due to bundled GRUB2 does not recognize EXT4 partition
-- Fedora all version: legacy boot does not work

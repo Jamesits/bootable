@@ -9,6 +9,8 @@ DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID:
 DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS:-0}
 # EFI boot entry id ("BOOT" for removable installs, otherwise "GRUB")
 DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID:-BOOT}
+# Enable serial console
+DLIB_CAVEAT_SERIAL_CONSOLE=${DLIB_CAVEAT_SERIAL_CONSOLE:-0}
 
 dlib::plugin::bootloader::install() {
     # detect grub
@@ -73,21 +75,27 @@ dlib::plugin::bootloader::install() {
     # Disable os-prober
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_DISABLE_OS_PROBER" "true"
     # Enable serial console
-    _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_INPUT" "console serial"
-    _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_OUTPUT" "gfxterm serial"
-    # Unset GRUB_TERMINAL: on EFI environments, GRUB_TERMINAL="console serial" leads to double outputs
-    _grub2_config_unset "${GRUB_CONFIG}" "GRUB_TERMINAL"
-    # Get rid of the serial parameters warning
-    _grub2_config_set "${GRUB_CONFIG}" "GRUB_SERIAL_COMMAND" "serial"
+    if [ "${DLIB_CAVEAT_SERIAL_CONSOLE}" == "1" ]; then
+        _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_INPUT" "console serial"
+        _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_OUTPUT" "gfxterm serial"
+        # Unset GRUB_TERMINAL: on EFI environments, GRUB_TERMINAL="console serial" leads to double outputs
+        _grub2_config_unset "${GRUB_CONFIG}" "GRUB_TERMINAL"
+        # Get rid of the serial parameters warning
+        _grub2_config_set "${GRUB_CONFIG}" "GRUB_SERIAL_COMMAND" "serial"
+    fi
     # Unfuck serial GRUB menu for Ubuntu
     # https://girondi.net/post/ubuntu_console/
     # https://web.archive.org/web/20221207112654/https://blog.wataash.com/ubuntu_console/
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_HIDDEN_TIMEOUT_QUIET" "false"
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_TIMEOUT_STYLE" "menu"
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_TIMEOUT" "3"
-    # Kernel commandline
-    # for normal + recovery
-    _grub2_config_set "${GRUB_CONFIG}" "GRUB_CMDLINE_LINUX" "mitigations=off tsx_async_abort=off console=ttyS0 console=tty0"
+
+    # Kernel commandline for normal + recovery
+    # Notes:
+    # - `edd=off` required for Fedora kernels; otherwise resets very early during boot
+    if [ "${DLIB_CAVEAT_SERIAL_CONSOLE}" == "1" ]; then
+        _grub2_config_set "${GRUB_CONFIG}" "GRUB_CMDLINE_LINUX" "mitigations=off tsx_async_abort=off console=ttyS0 console=tty0 edd=off"
+    fi
 
     # generate full GRUB2 config
     _grub2_generate_config() {
