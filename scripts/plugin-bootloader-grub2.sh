@@ -31,7 +31,10 @@ dlib::plugin::bootloader::install() {
     if [ -x "${DLIB_MOUNT_ROOT}/usr/sbin/grub-install" ]; then # Debian
         GRUB_INSTALL=("/usr/sbin/grub-install")
         GRUB_MKCONFIG=("/usr/sbin/grub-mkconfig")
-    else
+    elif [ -x "${DLIB_MOUNT_ROOT}/usr/sbin/grub2-install" ]; then # Fedora
+        GRUB_INSTALL=("/usr/sbin/grub2-install")
+        GRUB_MKCONFIG=("/usr/sbin/grub2-mkconfig")
+    else # fallback
         GRUB_INSTALL=("grub-install")
         GRUB_MKCONFIG=("grub-mkconfig")
     fi
@@ -81,7 +84,7 @@ dlib::plugin::bootloader::install() {
     _grub2_config_unset "${GRUB_CONFIG}" "GRUB_TERMINAL"
     # Get rid of the serial parameters warning
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_SERIAL_COMMAND" "serial"
-    # Unfuck GRUB menu for Ubuntu
+    # Unfuck serial GRUB menu for Ubuntu
     # https://girondi.net/post/ubuntu_console/
     # https://web.archive.org/web/20221207112654/https://blog.wataash.com/ubuntu_console/
     _grub2_config_set "${GRUB_CONFIG}" "GRUB_HIDDEN_TIMEOUT_QUIET" "false"
@@ -93,14 +96,15 @@ dlib::plugin::bootloader::install() {
 
     # generate full GRUB2 config
     _grub2_generate_config() {
-        if [ -d "${DLIB_MOUNT_ROOT}$1" ]; then
+        if [ -d "$(dirname "${DLIB_MOUNT_ROOT}$1")" ]; then
             >&2 printf "[+] GRUB: regenerate config on %s\n" "$1"
-            PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH chroot "${DLIB_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1/grub.cfg"
+            PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH chroot "${DLIB_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1"
         else
             >&2 printf "[-] GRUB: skipped regenerate config on %s\n" "$1"
         fi
     }
     # generate chain load config
+    # This file will normally be generated during `grub-install` and does not need to be updated
     # https://ubuntuforums.org/showthread.php?t=2485384
     _grub2_genreate_bootstrap_config() {
         cat > "${DLIB_MOUNT_ROOT}$1" <<EOF
@@ -110,7 +114,8 @@ configfile \$prefix/grub.cfg
 EOF
     }
     # for legacy boot
-    _grub2_generate_config "/boot/grub"
+    _grub2_generate_config "/boot/grub/grub.cfg"
+    _grub2_generate_config "/boot/grub2/grub.cfg"
     # for EFI
     if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}" != '' ]; then
         # Caveats for Canonical signed GRUB2 loader:
@@ -119,18 +124,21 @@ EOF
         # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
         # https://askubuntu.com/a/1406590
         mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}"
-        # _grub2_generate_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}"
+        # _grub2_generate_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}/grub.cfg"
         _grub2_genreate_bootstrap_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_CONFIG_DIR_EFI}/grub.cfg"
     else
         # removable install
-        # _grub2_generate_config "/boot/efi/EFI/BOOT"
+        # _grub2_generate_config "/boot/efi/EFI/BOOT/grub.cfg"
         _grub2_genreate_bootstrap_config "/boot/efi/EFI/BOOT/grub.cfg"
         # default --bootloader-id for vanilla GRUB2
-        # _grub2_generate_config "/boot/efi/EFI/GRUB"
+        # _grub2_generate_config "/boot/efi/EFI/GRUB/grub.cfg"
     fi
     # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
     # This can be debugged by using `set` in the recovery shell. Here's a workaround.
     # This file is harmless for other distros.
     mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/grub"
     _grub2_genreate_bootstrap_config "/boot/efi/boot/grub/grub.cfg"
+    # The same fix but for Fedora
+    mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/grub2"
+    _grub2_genreate_bootstrap_config "/boot/efi/boot/grub2/grub2.cfg"
 }
