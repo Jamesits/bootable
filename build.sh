@@ -89,6 +89,9 @@ toolchain mkswap "${DLIB_DISK_LOOPBACK_DEVICE}p3"
 # Root
 >&2 printf "[*] Format: Root\n"
 toolchain mkfs -t ext4 "${DLIB_DISK_LOOPBACK_DEVICE}p4"
+# GRUB2 on CentOS 7 does not support metadata_csum_seed
+# https://www.linuxquestions.org/questions/slackware-14/grub-install-error-unknown-filesystem-4175723528/
+toolchain tune2fs -O ^metadata_csum_seed "${DLIB_DISK_LOOPBACK_DEVICE}p4"
 
 # Create mount tree for chrooting and initramfs builds
 >&2 printf "[*] Populate: /\n"

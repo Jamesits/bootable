@@ -17,8 +17,13 @@ dlib::plugin::bootloader::install() {
     local GRUB_INSTALL=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-install")
     local GRUB_MKCONFIG=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-mkconfig")
 
+    # CentOS 7: `/boot/grub2/grubenv`` is symlinked to ``../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
+    if [ -L "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ] && [ ! -e "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
+        rm -fv "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
+    fi
+
     # EFI
-    >&2 printf "[*] GRUB: EFI\n"
+    >&2 printf "[*] GRUB2: EFI\n"
     # Notes:
     # - TODO: Temporary using `--removable` to generate bootx64.efi; should use shim instead for secure boot compatibility
     # - TODO: use --uefi-secure-boot
@@ -35,7 +40,7 @@ dlib::plugin::bootloader::install() {
     fi
 
     # Legacy
-    >&2 printf "[*] GRUB: legacy\n"
+    >&2 printf "[*] GRUB2: legacy\n"
     # Notes:
     # - QEMU/SeaBIOS requires either `--compress=xz --core-compress=xz` or `--disk-module=native` to boot; otherwise GRUB2 resets itself on any disk read (e.g. during the `search` command) https://www.reddit.com/r/coreboot/comments/9353qf/
     # - `--compress=xz` leads to `/usr/sbin/grub-install: warning: can't compress `/usr/lib/grub/i386-pc/acpi.mod' to `/boot/grub/i386-pc/acpi.mod'.` on some versions
@@ -134,4 +139,10 @@ EOF
     # This file is harmless for other distros.
     mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}"
     _grub2_genreate_bootstrap_config "/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+
+    # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
+    _grub2_legacy_compat_fix() {
+        sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
+    }
+    _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 }
