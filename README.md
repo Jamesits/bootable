@@ -22,3 +22,4 @@ sudo ./build.sh <distro>/<version>
 
 - Ubuntu bionic: EFI boot does not work due to bundled GRUB2 does not recognize EXT4 partition
 - CentOS 6: GRUB does not install for now
+- Alpine Linux: currently does not boot

@@ -110,7 +110,11 @@ mount_tmpfs() {
 mount_bind() {
     >&2 printf "[*] Populate: %s\n" "$1"
     if [ ! -e "${DLIB_MOUNT_ROOT}$1" ]; then
-        mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+        if [ -d "$1" ]; then
+            mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+        else
+            touch -- "${DLIB_MOUNT_ROOT}$1"
+        fi
     fi
     mount --bind "$1" "${DLIB_MOUNT_ROOT}$1"
     mount --make-rslave "${DLIB_MOUNT_ROOT}$1"
