@@ -49,6 +49,7 @@ dlib::plugin::bootloader::install() {
             cp -v "${kp}/vmlinuz" "${DLIB_MOUNT_ROOT}/boot/vmlinuz-${KERNEL}"
         done
     else
+        # use the grub-install binary that comes with the distro
         chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${DLIB_DISK_LOOPBACK_DEVICE}"
     fi
 
@@ -65,6 +66,7 @@ dlib::plugin::bootloader::install() {
             --boot-directory="${DLIB_MOUNT_ROOT}/boot" \
             "${DLIB_DISK_LOOPBACK_DEVICE}"
     else
+        # use the grub-install binary that comes with the distro
         chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native "${DLIB_DISK_LOOPBACK_DEVICE}"
     fi
 
@@ -142,19 +144,27 @@ EOF
     }
 
     if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
+        # EL8+
         # https://forums.centos.org/viewtopic.php?t=78909#p331620
         for file in "/etc/grub.cfg" "/etc/grub2.cfg" "/etc/grub2-efi.cfg"; do
             if [ -L "${DLIB_MOUNT_ROOT}${file}" ]; then
-                >&2 printf "[i] Using inferred GRUB2 config file path: %s\n" "${file}"
+                >&2 printf "[i] Using inferred GRUB2 config file path: %s -> %s\n" "${file}" "$(readlink "${DLIB_MOUNT_ROOT}${file}")"
                 # shellcheck disable=SC2016
                 chroot "${DLIB_MOUNT_ROOT}" bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; grub2-mkconfig -o \"${file}\""
             fi
         done
+
+        # Generate a stub at /boot/efi/EFI/<distro>/grub.cfg
+        # fix for *EL 9 where /etc/grub2.cfg and /etc/grub2-efi.cfg points to the same file
+        if [ ! -f "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg" ]; then
+            mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}"
+            _grub2_genreate_bootstrap_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
+        fi
     else
         # for legacy boot
         _grub2_generate_config "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 
-        # for EFI
+        # redirect EFI config to legacy config
         # Caveats for Canonical signed GRUB2 loader:
         # - `/boot/efi/EFI/$id` will be a special phase 1 config
         # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
@@ -167,13 +177,13 @@ EOF
         # This file is harmless for other distros.
         mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}"
         _grub2_genreate_bootstrap_config "/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
-
-        # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
-        _grub2_legacy_compat_fix() {
-            sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
-        }
-        _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
     fi
+
+    # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
+    _grub2_legacy_compat_fix() {
+        sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
+    }
+    _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 
     # Unfuck grubenv
     # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`

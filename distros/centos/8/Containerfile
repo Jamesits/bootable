@@ -1,1 +1,21 @@
-../../_el/modern/Containerfile
+ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/centos:8
+ARG DLIB_BUILD_FLAVOR=default
+
+### minimal image ###
+FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+
+RUN sed -Ei'' 's/mirror.centos.org/vault.centos.org/g; s/#baseurl=/baseurl=/g; s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+
+RUN dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates \
+    && dnf clean all
+
+### default image ###
+FROM flavor-minimal as flavor-default
+
+RUN dnf -y install qemu-guest-agent cloud-init openssh vim mtr \
+    && dnf clean all
+
+### finalize ###
+FROM "flavor-$DLIB_BUILD_FLAVOR"
+
+RUN passwd -d root
