@@ -9,6 +9,8 @@ DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID:
 DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS:-0}
 # EFI boot entry id ("BOOT" for removable installs, otherwise "GRUB")
 DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID:-BOOT}
+# Use DNF to install the signed GRUB2 and shim binary
+DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB=${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB:-0}
 # Enable serial console
 DLIB_CAVEAT_SERIAL_CONSOLE=${DLIB_CAVEAT_SERIAL_CONSOLE:-0}
 
@@ -17,26 +19,30 @@ dlib::plugin::bootloader::install() {
     local GRUB_INSTALL=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-install")
     local GRUB_MKCONFIG=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-mkconfig")
 
-    # CentOS 7: `/boot/grub2/grubenv`` is symlinked to ``../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
-    if [ -L "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ] && [ ! -e "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
-        rm -fv "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
-    fi
-
     # EFI
     >&2 printf "[*] GRUB2: EFI\n"
     # Notes:
     # - TODO: Temporary using `--removable` to generate bootx64.efi; should use shim instead for secure boot compatibility
     # - TODO: use --uefi-secure-boot
     # - DO NOT specify `--compress=xz` or `--core-compress=xz` for EFI installation; it breaks legacy boot, and I don't know why
-    if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '0' ]; then
-        chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${DLIB_DISK_LOOPBACK_DEVICE}"
-    else
+    if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '1' ]; then
         toolchain /usr/sbin/grub-install --target=x86_64-efi --recheck --force --skip-fs-probe --no-nvram --removable \
             --efi-directory="${DLIB_MOUNT_ROOT}/boot/efi" \
             --directory="${DLIB_MOUNT_ROOT}/usr/lib/grub/x86_64-efi" \
             --locale-directory="${DLIB_MOUNT_ROOT}/usr/share/locale" \
             --boot-directory="${DLIB_MOUNT_ROOT}/boot" \
             "${DLIB_DISK_LOOPBACK_DEVICE}"
+    elif [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
+        # *EL 8: grub2-install does not work on UEFI systems since it want you to install the signed version of the EFI bootloader while grub2-install must alter the EFI binary
+        # Notes:
+        # - Removable install is not supported in this way
+        # - It would make /boot/grub/grubenv a symlink which breaks everything
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1917213
+        # https://docs.fedoraproject.org/en-US/fedora/rawhide/system-administrators-guide/kernel-module-driver-configuration/Working_with_the_GRUB_2_Boot_Loader/#sec-Resetting_and_Reinstalling_GRUB_2
+        chroot "${DLIB_MOUNT_ROOT}" dnf -y reinstall grub2-efi shim
+        chroot "${DLIB_MOUNT_ROOT}" dnf clean all
+    else
+        chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${DLIB_DISK_LOOPBACK_DEVICE}"
     fi
 
     # Legacy
@@ -45,14 +51,14 @@ dlib::plugin::bootloader::install() {
     # - QEMU/SeaBIOS requires either `--compress=xz --core-compress=xz` or `--disk-module=native` to boot; otherwise GRUB2 resets itself on any disk read (e.g. during the `search` command) https://www.reddit.com/r/coreboot/comments/9353qf/
     # - `--compress=xz` leads to `/usr/sbin/grub-install: warning: can't compress `/usr/lib/grub/i386-pc/acpi.mod' to `/boot/grub/i386-pc/acpi.mod'.` on some versions
     # - `--core-compress=` is not recognized on some GRUB2 versions due to a bug https://savannah.gnu.org/bugs/?60067 https://lists.gnu.org/archive/html/grub-devel/2018-09/msg00018.html;
-    if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '0' ]; then
-        chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native "${DLIB_DISK_LOOPBACK_DEVICE}"
-    else
+    if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '1' ]; then
         toolchain /usr/sbin/grub-install --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native \
             --directory="${DLIB_MOUNT_ROOT}/usr/lib/grub/i386-pc" \
             --locale-directory="${DLIB_MOUNT_ROOT}/usr/share/locale" \
             --boot-directory="${DLIB_MOUNT_ROOT}/boot" \
             "${DLIB_DISK_LOOPBACK_DEVICE}"
+    else
+        chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native "${DLIB_DISK_LOOPBACK_DEVICE}"
     fi
 
     # Update GRUB config
@@ -124,7 +130,13 @@ EOF
     }
 
     # for legacy boot
-    _grub2_generate_config "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+    if [ -L "${DLIB_MOUNT_ROOT}/etc/grub.cfg" ]; then
+        # CentOS https://unix.stackexchange.com/questions/152222/what-is-the-equivalent-of-update-grub-for-rhel-fedora-and-centos-systems
+        >&2 echo "[i] Using inferred GRUB2 config file path"
+        _grub2_generate_config "$(realpath --relative-to="${DLIB_MOUNT_ROOT}" "$(readlink -e "${DLIB_MOUNT_ROOT}/etc/grub2.cfg")")"
+    else
+        _grub2_generate_config "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+    fi
 
     # for EFI
     # Caveats for Canonical signed GRUB2 loader:
@@ -145,4 +157,12 @@ EOF
         sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
     }
     _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+
+    # Unfuck grubenv
+    # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
+    if [ -L "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
+        >&2 printf "[!] GRUB2: fix grubenv\n"
+        rm -fv "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
+        chroot "${DLIB_MOUNT_ROOT}" grub2-editenv "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" create
+    fi
 }

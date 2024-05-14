@@ -87,11 +87,11 @@ toolchain mkfs -t vfat -F 32 -n "EFI" "${DLIB_DISK_LOOPBACK_DEVICE}p2"
 >&2 printf "[*] Format: Swap\n"
 toolchain mkswap "${DLIB_DISK_LOOPBACK_DEVICE}p3"
 # Root
+# Features disabled:
+# - metadata_csum_seed for GRUB2 on CentOS 7 https://www.linuxquestions.org/questions/slackware-14/grub-install-error-unknown-filesystem-4175723528/
+# - orphan_file for e2fsck on Fedora 38
 >&2 printf "[*] Format: Root\n"
-toolchain mkfs -t ext4 "${DLIB_DISK_LOOPBACK_DEVICE}p4"
-# GRUB2 on CentOS 7 does not support metadata_csum_seed
-# https://www.linuxquestions.org/questions/slackware-14/grub-install-error-unknown-filesystem-4175723528/
-toolchain tune2fs -O ^metadata_csum_seed "${DLIB_DISK_LOOPBACK_DEVICE}p4"
+toolchain mkfs -t ext4 -O ^metadata_csum_seed,^orphan_file "${DLIB_DISK_LOOPBACK_DEVICE}p4"
 
 # Create mount tree for chrooting and initramfs builds
 >&2 printf "[*] Populate: /\n"
@@ -109,7 +109,9 @@ mount_tmpfs() {
 }
 mount_bind() {
     >&2 printf "[*] Populate: %s\n" "$1"
-    mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+    if [ ! -e "${DLIB_MOUNT_ROOT}$1" ]; then
+        mkdir -p -- "${DLIB_MOUNT_ROOT}$1"
+    fi
     mount --bind "$1" "${DLIB_MOUNT_ROOT}$1"
     mount --make-rslave "${DLIB_MOUNT_ROOT}$1"
 }
@@ -119,6 +121,7 @@ mount_tmpfs /run
 mount_bind /run/udev # https://wiki.gentoo.org/wiki/GRUB#os-prober_and_UEFI_in_chroot
 mount_bind /sys
 mount_tmpfs /tmp
+mount_bind /etc/resolv.conf
 
 # Post-install hooks
 hook() {
