@@ -41,6 +41,13 @@ dlib::plugin::bootloader::install() {
         # https://docs.fedoraproject.org/en-US/fedora/rawhide/system-administrators-guide/kernel-module-driver-configuration/Working_with_the_GRUB_2_Boot_Loader/#sec-Resetting_and_Reinstalling_GRUB_2
         chroot "${DLIB_MOUNT_ROOT}" dnf -y reinstall grub2-efi shim
         chroot "${DLIB_MOUNT_ROOT}" dnf clean all
+
+        # *EL 8: manually copy kernel to /boot (this should happen during the installation of "kernel" package)
+        for kp in "${DLIB_MOUNT_ROOT}/lib/modules/"*; do
+            local KERNEL
+            KERNEL="$(basename "$kp")"
+            cp -v "${kp}/vmlinuz" "${DLIB_MOUNT_ROOT}/boot/vmlinuz-${KERNEL}"
+        done
     else
         chroot "${DLIB_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${DLIB_DISK_LOOPBACK_DEVICE}"
     fi
@@ -88,7 +95,12 @@ dlib::plugin::bootloader::install() {
     # Enable serial console
     if [ "${DLIB_CAVEAT_SERIAL_CONSOLE}" == "1" ]; then
         _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_INPUT" "console serial"
-        _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_OUTPUT" "gfxterm serial"
+        if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
+            # Output: "gfxterm serial" does not work on CentOS 8
+            _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_OUTPUT" "console serial"
+        else
+            _grub2_config_set "${GRUB_CONFIG}" "GRUB_TERMINAL_OUTPUT" "gfxterm serial"
+        fi
         # Unset GRUB_TERMINAL: on EFI environments, GRUB_TERMINAL="console serial" leads to double outputs
         _grub2_config_unset "${GRUB_CONFIG}" "GRUB_TERMINAL"
         # Get rid of the serial parameters warning
@@ -129,34 +141,39 @@ configfile \$prefix/grub.cfg
 EOF
     }
 
-    # for legacy boot
-    if [ -L "${DLIB_MOUNT_ROOT}/etc/grub.cfg" ]; then
-        # CentOS https://unix.stackexchange.com/questions/152222/what-is-the-equivalent-of-update-grub-for-rhel-fedora-and-centos-systems
-        >&2 echo "[i] Using inferred GRUB2 config file path"
-        _grub2_generate_config "$(realpath --relative-to="${DLIB_MOUNT_ROOT}" "$(readlink -e "${DLIB_MOUNT_ROOT}/etc/grub2.cfg")")"
+    if [ "${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
+        # https://forums.centos.org/viewtopic.php?t=78909#p331620
+        for file in "/etc/grub.cfg" "/etc/grub2.cfg" "/etc/grub2-efi.cfg"; do
+            if [ -L "${DLIB_MOUNT_ROOT}${file}" ]; then
+                >&2 printf "[i] Using inferred GRUB2 config file path: %s\n" "${file}"
+                # shellcheck disable=SC2016
+                chroot "${DLIB_MOUNT_ROOT}" bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; grub2-mkconfig -o \"${file}\""
+            fi
+        done
     else
+        # for legacy boot
         _grub2_generate_config "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+
+        # for EFI
+        # Caveats for Canonical signed GRUB2 loader:
+        # - `/boot/efi/EFI/$id` will be a special phase 1 config
+        # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
+        # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
+        # https://askubuntu.com/a/1406590
+        mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}"
+        _grub2_genreate_bootstrap_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
+        # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
+        # This can be debugged by using `set` in the recovery shell. Here's a workaround.
+        # This file is harmless for other distros.
+        mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}"
+        _grub2_genreate_bootstrap_config "/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+
+        # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
+        _grub2_legacy_compat_fix() {
+            sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
+        }
+        _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
     fi
-
-    # for EFI
-    # Caveats for Canonical signed GRUB2 loader:
-    # - `/boot/efi/EFI/$id` will be a special phase 1 config
-    # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
-    # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
-    # https://askubuntu.com/a/1406590
-    mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}"
-    _grub2_genreate_bootstrap_config "/boot/efi/EFI/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
-    # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
-    # This can be debugged by using `set` in the recovery shell. Here's a workaround.
-    # This file is harmless for other distros.
-    mkdir -p -- "${DLIB_MOUNT_ROOT}/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}"
-    _grub2_genreate_bootstrap_config "/boot/efi/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
-
-    # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
-    _grub2_legacy_compat_fix() {
-        sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
-    }
-    _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 
     # Unfuck grubenv
     # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
