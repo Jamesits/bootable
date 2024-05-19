@@ -8,5 +8,5 @@ dlib::plugin::bootloader::install() {
     cat > "${DLIB_MOUNT_ROOT}/boot/grub/device.map" <<EOF
 (hd0) ${DLIB_DISK_LOOPBACK_DEVICE}
 EOF
-    PATH=/usr/sbin:/sbin:/usr/bin:/bin chroot "${DLIB_MOUNT_ROOT}" "grub-install" --no-floppy "(hd0)"
+    PATH=/usr/sbin:/sbin:/usr/bin:/bin chroot "${DLIB_MOUNT_ROOT}" "grub-install" --root-directory=/ --no-floppy "${DLIB_DISK_LOOPBACK_DEVICE}"
 }

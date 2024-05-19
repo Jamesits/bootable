@@ -46,6 +46,6 @@ dlib::container::exec() {
     local PWD=$1
     shift
 
-    docker run --rm --privileged --hostname="$(uname -n)" --volume="$PWD:$PWD" --volume="/dev:/dev" --workdir="$PWD" -- "$TAG" "$@"
+    docker run --interactive --rm --privileged --hostname="$(uname -n)" --volume="$PWD:$PWD" --volume="/dev:/dev" --workdir="$PWD" -- "$TAG" "$@"
     return $?
 }
