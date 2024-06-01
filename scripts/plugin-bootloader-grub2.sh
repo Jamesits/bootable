@@ -19,6 +19,17 @@ dlib::plugin::bootloader::install() {
     local GRUB_INSTALL=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-install")
     local GRUB_MKCONFIG=("${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-mkconfig")
 
+    _grub2_unfuck_env() {
+        # Unfuck grubenv
+        # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
+        if [ -L "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
+            >&2 printf "[!] GRUB2: fix grubenv\n"
+            rm -fv "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
+            chroot "${DLIB_MOUNT_ROOT}" grub2-editenv "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" create
+        fi
+    }
+    _grub2_unfuck_env
+
     # EFI
     >&2 printf "[*] GRUB2: EFI\n"
     # Notes:
@@ -185,11 +196,5 @@ EOF
     }
     _grub2_legacy_compat_fix "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 
-    # Unfuck grubenv
-    # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
-    if [ -L "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
-        >&2 printf "[!] GRUB2: fix grubenv\n"
-        rm -fv "${DLIB_MOUNT_ROOT}/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
-        chroot "${DLIB_MOUNT_ROOT}" grub2-editenv "/boot/${DLIB_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" create
-    fi
+    _grub2_unfuck_env
 }
