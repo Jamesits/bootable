@@ -1,10 +1,10 @@
 #!/hint/bash
 
 DLIB_PLUGIN_INITRD_DRACUT_CAVEAT_REGENERATE_ALL=${DLIB_PLUGIN_INITRD_DRACUT_CAVEAT_REGENERATE_ALL:-1}
-DRACUT_ARGS=(--no-hostonly --no-hostonly-cmdline --no-hostonly-i18n --persistent-policy=by-uuid --fstab)
 
 dlib::plugin::initrd::generate() {
     >&2 printf "[*] dracut...\n"
+    local DRACUT_ARGS=(--no-hostonly --no-hostonly-cmdline --no-hostonly-i18n --persistent-policy=by-uuid --fstab)
 
     if [ "${DLIB_PLUGIN_INITRD_DRACUT_CAVEAT_REGENERATE_ALL}" == "1" ]; then
         chroot "${DLIB_MOUNT_ROOT}" /bin/bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; dracut --regenerate-all --force ${DRACUT_ARGS[*]}"
