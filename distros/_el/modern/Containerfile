@@ -10,7 +10,7 @@ RUN dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc gr
 ### default image ###
 FROM flavor-minimal as flavor-default
 
-RUN dnf -y install qemu-guest-agent cloud-init openssh vim mtr \
+RUN dnf -y install NetworkManager qemu-guest-agent cloud-init openssh vim mtr \
     && dnf clean all
 
 ### finalize ###

@@ -10,7 +10,7 @@ RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut gr
 ### default image ###
 FROM flavor-minimal as flavor-default
 
-RUN yum -y --setopt=skip_missing_names_on_install=False install qemu-guest-agent cloud-init openssh vim mtr \
+RUN yum -y --setopt=skip_missing_names_on_install=False install NetworkManager qemu-guest-agent cloud-init openssh vim mtr \
     && yum clean all
 
 ### finalize ###
