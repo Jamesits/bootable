@@ -3,7 +3,7 @@
 # shellcheck disable=SC2034 # do not check for unused variables
 
 # load plugins
-. "${DLIB_PLUGINS_DIR}/plugin-initrd-mkinitfs.sh"
-. "${DLIB_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
+. "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-mkinitfs.sh"
+. "${BOOTABLE_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
 
-export DLIB_SOURCE_IMAGE="registry.hub.docker.com/library/alpine:edge"
+export BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/alpine:edge"

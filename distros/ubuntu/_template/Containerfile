@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/ubuntu:jammy
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/ubuntu:jammy
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 # Remove Docker customizations
 RUN rm -rf /etc/apt/apt.conf.d/docker-*
@@ -22,6 +22,6 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 RUN passwd -d root

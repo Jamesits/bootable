@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/centos:6
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:6
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 # switch to vault.centos.org
 RUN sed -Ei'' 's/mirror.centos.org/vault.centos.org/g; s/#baseurl=/baseurl=/g; s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
@@ -17,6 +17,6 @@ RUN yum -y --setopt=skip_missing_names_on_install=False install NetworkManager q
     && yum clean all
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 RUN passwd -d root

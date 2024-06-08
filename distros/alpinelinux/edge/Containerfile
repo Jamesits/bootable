@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/alpine:edge
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/alpine:edge
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 RUN apk add --no-cache --update linux-lts linux-firmware mkinitfs amd-ucode intel-ucode grub-efi grub-bios efibootmgr mokutil \
     && rm -rf /var/cache/pacman/pkg/*
@@ -11,7 +11,7 @@ RUN apk add --no-cache --update linux-lts linux-firmware mkinitfs amd-ucode inte
 FROM flavor-minimal as flavor-default
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 # TODO: fix timezone info
 RUN passwd -d root

@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/centos:7
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:7
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates \
     && yum clean all
@@ -14,6 +14,6 @@ RUN yum -y --setopt=skip_missing_names_on_install=False install NetworkManager q
     && yum clean all
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 RUN passwd -d root

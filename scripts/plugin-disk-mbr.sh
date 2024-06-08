@@ -1,6 +1,6 @@
 #!/hint/bash
 
-dlib::plugin::disk::create() {
+bootable::plugin::disk::create() {
     toolchain sfdisk --force "$1" <<EOF
 label: dos
 unit: sectors

@@ -1,4 +1,4 @@
-# Linux Image Builder
+# Bootable
 
 Docker-based universal Linux image builder.
 

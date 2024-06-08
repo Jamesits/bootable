@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/centos:8
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:8
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 RUN sed -Ei'' 's/mirror.centos.org/vault.centos.org/g; s/#baseurl=/baseurl=/g; s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
 
@@ -16,6 +16,6 @@ RUN dnf -y install qemu-guest-agent cloud-init openssh vim mtr \
     && dnf clean all
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 RUN passwd -d root

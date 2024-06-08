@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/centos:8
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:8
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 RUN dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates \
     && dnf clean all
@@ -14,6 +14,6 @@ RUN dnf -y install NetworkManager qemu-guest-agent cloud-init openssh vim mtr \
     && dnf clean all
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 RUN passwd -d root

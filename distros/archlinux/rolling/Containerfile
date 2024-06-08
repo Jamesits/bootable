@@ -1,8 +1,8 @@
-ARG DLIB_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
-ARG DLIB_BUILD_FLAVOR=default
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
+ARG BOOTABLE_BUILD_FLAVOR=default
 
 ### minimal image ###
-FROM "$DLIB_SOURCE_IMAGE" as flavor-minimal
+FROM "$BOOTABLE_SOURCE_IMAGE" as flavor-minimal
 
 # fix polkit permission problem on the default archlinux docker image
 RUN chmod 755 /usr/share/polkit-1/rules.d \
@@ -20,7 +20,7 @@ RUN pacman -Syu --noconfirm \
     && rm -rf /var/cache/pacman/pkg/*
 
 ### finalize ###
-FROM "flavor-$DLIB_BUILD_FLAVOR"
+FROM "flavor-$BOOTABLE_BUILD_FLAVOR"
 
 # TODO: fix timezone info
 RUN passwd -d root

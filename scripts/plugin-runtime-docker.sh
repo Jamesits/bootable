@@ -1,7 +1,7 @@
 #!/hint/bash
 
 export DOCKER_BUILDKIT=1
-DLIB_DOCKER_BUILD_ARG+=(
+BOOTABLE_DOCKER_BUILD_ARGS+=(
     # BuildKit cache
     "--build-arg"
     "BUILDKIT_INLINE_CACHE=1"
@@ -16,31 +16,31 @@ DLIB_DOCKER_BUILD_ARG+=(
     "--build-arg"
     "no_proxy"
 
-    # Dlib config
+    # bootable config
     "--build-arg"
-    "DLIB_SOURCE_IMAGE"
+    "BOOTABLE_SOURCE_IMAGE"
     "--build-arg"
-    "DLIB_BUILD_FLAVOR"
+    "BOOTABLE_BUILD_FLAVOR"
 )
 
 # Usage: $0 <context-dir> <file> <output-tar>
-dlib::container::build::tar() {
+bootable::container::build::tar() {
     local REL_FILE
     REL_FILE=$(realpath --relative-to="$1" "$2")
-    docker build --file="$REL_FILE" --output="type=tar,dest=$3" "${DLIB_DOCKER_BUILD_ARG[@]}" -- "$1"
+    docker build --file="$REL_FILE" --output="type=tar,dest=$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
     return $?
 }
 
 # Usage: $0 <context-dir> <file> <output-tag>
-dlib::container::build::image() {
+bootable::container::build::image() {
     local REL_FILE
     REL_FILE=$(realpath --relative-to="$1" "$2")
-    docker build --file="$REL_FILE" --tag="$3" "${DLIB_DOCKER_BUILD_ARG[@]}" -- "$1"
+    docker build --file="$REL_FILE" --tag="$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
     return $?
 }
 
 # Usage: $0 <tag> <working-dir> <cmd> [args...]
-dlib::container::exec() {
+bootable::container::exec() {
     local TAG=$1
     shift
     local PWD=$1
