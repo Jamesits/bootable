@@ -3,10 +3,9 @@
 # shellcheck disable=SC2034 # do not check for unused variables
 
 # load plugins
-. "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-dracut.sh"
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID="grub2"
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID="centos"
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB=1
-. "${BOOTABLE_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
-
+BOOTABLE_DOCKER_BUILD_ARGS+=(
+    "--label=bootable.plugin.bootloader.grub2.id=grub2"
+    "--label=bootable.plugin.bootloader.grub2.efi-id=centos"
+    "--label=bootable.plugin.bootloader.grub2.dnf-secure-boot=1"
+)
 export BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/centos:8"

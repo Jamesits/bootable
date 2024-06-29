@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 
 BOOTABLE_PROJECT_ROOT="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)"
-BOOTABLE_TOOLCHAIN_DIR="${BOOTABLE_PROJECT_ROOT}/toolchain"
+BOOTABLE_PLUGINS_DIR="${BOOTABLE_PROJECT_ROOT}/scripts"
 . "${BOOTABLE_PLUGINS_DIR}/config.sh"
 . "${BOOTABLE_PLUGINS_DIR}/common.sh"
 

@@ -1,0 +1,14 @@
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:6
+FROM "$BOOTABLE_SOURCE_IMAGE"
+LABEL bootable.distro.like="rhel"
+LABEL bootable.distro.like-version="6"
+LABEL bootable.plugin.partition="mbr"
+LABEL bootable.plugin.bootloader="grub0"
+LABEL bootable.plugin.initrd="dracut"
+LABEL bootable.plugin.initrd.dracut.regenerate-all="0"
+
+# switch to vault.centos.org
+RUN sed -Ei'' 's/mirror.centos.org/vault.centos.org/g; s/#baseurl=/baseurl=/g; s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+
+RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut grub grubby sysvinit ca-certificates \
+    && yum clean all

@@ -1,0 +1,2 @@
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/jamesits/bootable:base-debian-bookworm-grub2-latest
+FROM "$BOOTABLE_SOURCE_IMAGE"

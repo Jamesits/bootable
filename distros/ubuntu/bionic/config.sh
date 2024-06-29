@@ -2,9 +2,7 @@
 # shellcheck disable=SC1090,SC1091 # do not warn for external scripts
 # shellcheck disable=SC2034 # do not check for unused variables
 
-# load plugins
-. "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-initramfs-tools.sh"
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS=1
-. "${BOOTABLE_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
-
-export BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/ubuntu:bionic"
+BOOTABLE_DOCKER_BUILD_ARGS+=(
+    "--label=bootable.plugin.bootloader.grub2.external-tools=1"
+)
+BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/ubuntu:bionic"

@@ -1,0 +1,10 @@
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/centos:7
+FROM "$BOOTABLE_SOURCE_IMAGE"
+LABEL bootable.distro.like="rhel"
+LABEL bootable.distro.like-version="7"
+LABEL bootable.plugin.partition="gpt"
+LABEL bootable.plugin.bootloader="grub2"
+LABEL bootable.plugin.initrd="dracut"
+
+RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates \
+    && yum clean all

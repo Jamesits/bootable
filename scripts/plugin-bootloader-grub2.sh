@@ -2,15 +2,15 @@
 
 # Caveats
 # GRUB2 install prefix
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX=${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX:-/usr/sbin}
+BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX="$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader.grub2.prefix" "/usr/sbin")"
 # GRUB2 identity ("grub" or "grub2")
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID=${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID:-grub}
+BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID="$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader.grub2.id" "grub")"
 # Debian bullseye's `grub-install` does not want to play with loop device in neither EFI nor legacy boot mode. Have to use a new `grub-install` binary.
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS=${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS:-0}
+BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS="$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader.grub2.external-tools" "1")"
 # EFI boot entry id ("BOOT" for removable installs, otherwise "GRUB")
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID=${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID:-BOOT}
+BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID="$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader.grub2.efi-id" "BOOT")"
 # Use DNF to install the signed GRUB2 and shim binary
-BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB=${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB:-0}
+BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB="$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader.grub2.dnf-secure-boot" "0")"
 # Enable serial console
 BOOTABLE_CAVEAT_SERIAL_CONSOLE=${BOOTABLE_CAVEAT_SERIAL_CONSOLE:-0}
 

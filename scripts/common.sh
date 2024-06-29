@@ -10,9 +10,7 @@ if [ "$BOOTABLE_BUILD_NOCACHE" == "1" ]; then
 fi
 
 # Pull in default plugins
-. "${BOOTABLE_PLUGINS_DIR}/plugin-ui-require-root.sh"
 . "${BOOTABLE_PLUGINS_DIR}/plugin-runtime-docker.sh"
-. "${BOOTABLE_PLUGINS_DIR}/plugin-disk-gpt.sh"
 . "${BOOTABLE_PLUGINS_DIR}/plugin-fstab.sh"
 
 toolchain() {

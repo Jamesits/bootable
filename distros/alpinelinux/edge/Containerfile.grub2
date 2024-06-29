@@ -1,0 +1,10 @@
+ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/alpine:edge
+FROM "$BOOTABLE_SOURCE_IMAGE"
+LABEL bootable.distro.like="alpinelinux"
+LABEL bootable.distro.like-version="edge"
+LABEL bootable.plugin.partition="gpt"
+LABEL bootable.plugin.bootloader="grub2"
+LABEL bootable.plugin.initrd="mkinitfs"
+
+RUN apk add --no-cache --update linux-lts linux-firmware mkinitfs amd-ucode intel-ucode grub-efi grub-bios efibootmgr mokutil \
+    && rm -rf /var/cache/pacman/pkg/*

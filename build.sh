@@ -6,13 +6,14 @@ BOOTABLE_PROJECT_ROOT="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/nul
 BOOTABLE_PLUGINS_DIR="${BOOTABLE_PROJECT_ROOT}/scripts"
 . "${BOOTABLE_PLUGINS_DIR}/config.sh"
 . "${BOOTABLE_PLUGINS_DIR}/common.sh"
+. "${BOOTABLE_PLUGINS_DIR}/plugin-ui-require-root.sh"
 
 BOOTABLE_DISTRO="${BOOTABLE_DISTRO:-$1}"
->&2 printf "[i] Using distro %s\n" "${BOOTABLE_DISTRO}"
-BOOTABLE_SCOPED_TMP_DIR="${BOOTABLE_GLOBAL_TMP_DIR}/${BOOTABLE_DISTRO}"
+BOOTABLE_VARIANT="grub2"
+>&2 printf "[i] Using distro %s, variant %s\n" "${BOOTABLE_DISTRO}" "${BOOTABLE_VARIANT}"
+BOOTABLE_SCOPED_TMP_DIR="${BOOTABLE_GLOBAL_TMP_DIR}/${BOOTABLE_DISTRO}/${BOOTABLE_VARIANT}"
 
 mkdir -p "${BOOTABLE_SCOPED_TMP_DIR}"
-. "${BOOTABLE_DISTROS_DIR}/${BOOTABLE_DISTRO}/config.sh"
 
 # Create version info
 cat > "${BOOTABLE_SCOPED_TMP_DIR}/bootable-release" <<EOF
@@ -26,7 +27,59 @@ EOF
 
 # Build the OS image
 >&2 printf "[*] Build: OS image %s...\n" "${BOOTABLE_DISTRO}"
-bootable::container::build::tar "${BOOTABLE_PROJECT_ROOT}" "${BOOTABLE_DISTROS_DIR}/${BOOTABLE_DISTRO}/Containerfile" "${BOOTABLE_SCOPED_TMP_DIR}/rootfs.tar"
+BOOTABLE_BUILD_IMAGE_TAG="temp"
+bootable::container::build::image "tests/simple" "tests/simple/Containerfile" "${BOOTABLE_BUILD_IMAGE_TAG}"
+# load hooks
+case "$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.bootloader" "grub2")" in
+    grub0)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-bootloader-grub0.sh"
+    ;;
+
+    grub2)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-bootloader-grub2.sh"
+    ;;
+
+    *)
+    >&2 printf "Unknown bootloader type\n"
+    exit 1
+    ;;
+esac
+case "$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.partition" "gpt")" in
+    gpt)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-partition-gpt.sh"
+    ;;
+
+    mbr)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-partition-mbr.sh"
+    ;;
+
+    *)
+    >&2 printf "Unknown partition type\n"
+    exit 1
+    ;;
+esac
+case "$(bootable::container::label::get "${BOOTABLE_BUILD_IMAGE_TAG}" "bootable.plugin.initrd" "")" in
+    dracut)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-dracut.sh"
+    ;;
+
+    initramfs-tools)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-initramfs-tools.sh"
+    ;;
+
+    mkinitcpio)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-mkinitcpio.sh"
+    ;;
+
+    mkinitfs)
+    . "${BOOTABLE_PLUGINS_DIR}/plugin-initrd-mkinitfs.sh"
+    ;;
+
+    *)
+    >&2 printf "Unknown initrd type\n"
+    exit 1
+    ;;
+esac
 
 # Create and partition the disk (offline)
 >&2 printf "[*] Creating the boot disk...\n"
