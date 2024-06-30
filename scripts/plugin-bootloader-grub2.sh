@@ -37,7 +37,7 @@ bootable::plugin::bootloader::install() {
     # - TODO: use --uefi-secure-boot
     # - DO NOT specify `--compress=xz` or `--core-compress=xz` for EFI installation; it breaks legacy boot, and I don't know why
     if [ "${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '1' ]; then
-        toolchain /usr/sbin/grub-install --target=x86_64-efi --recheck --force --skip-fs-probe --no-nvram --removable \
+        bootable::toolchain /usr/sbin/grub-install --target=x86_64-efi --recheck --force --skip-fs-probe --no-nvram --removable \
             --efi-directory="${BOOTABLE_MOUNT_ROOT}/boot/efi" \
             --directory="${BOOTABLE_MOUNT_ROOT}/usr/lib/grub/x86_64-efi" \
             --locale-directory="${BOOTABLE_MOUNT_ROOT}/usr/share/locale" \
@@ -71,7 +71,7 @@ bootable::plugin::bootloader::install() {
     # - `--compress=xz` leads to `/usr/sbin/grub-install: warning: can't compress `/usr/lib/grub/i386-pc/acpi.mod' to `/boot/grub/i386-pc/acpi.mod'.` on some versions
     # - `--core-compress=` is not recognized on some GRUB2 versions due to a bug https://savannah.gnu.org/bugs/?60067 https://lists.gnu.org/archive/html/grub-devel/2018-09/msg00018.html;
     if [ "${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EXTERNAL_TOOLS}" == '1' ]; then
-        toolchain /usr/sbin/grub-install --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native \
+        bootable::toolchain /usr/sbin/grub-install --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native \
             --directory="${BOOTABLE_MOUNT_ROOT}/usr/lib/grub/i386-pc" \
             --locale-directory="${BOOTABLE_MOUNT_ROOT}/usr/share/locale" \
             --boot-directory="${BOOTABLE_MOUNT_ROOT}/boot" \
@@ -148,7 +148,7 @@ bootable::plugin::bootloader::install() {
     # https://ubuntuforums.org/showthread.php?t=2485384
     _grub2_genreate_bootstrap_config() {
         cat > "${BOOTABLE_MOUNT_ROOT}$1" <<EOF
-search.fs_uuid $(toolchain blkid -s UUID -o value "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4") root
+search.fs_uuid $(bootable::toolchain blkid -s UUID -o value "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4") root
 set prefix=(\$root)'/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}'
 configfile \$prefix/grub.cfg
 EOF

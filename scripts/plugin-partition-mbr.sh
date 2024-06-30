@@ -1,7 +1,7 @@
 #!/hint/bash
 
 bootable::plugin::disk::create() {
-    toolchain sfdisk --force "$1" <<EOF
+    bootable::toolchain sfdisk --force "$1" <<EOF
 label: dos
 unit: sectors
 sector-size: 512
@@ -12,5 +12,5 @@ noop3 : start=      530432, size=     1048576, type=82
 noop4 : start=     1579008, size=     6809600, type=83
 
 EOF
-    toolchain sfdisk -l "$1"
+    bootable::toolchain sfdisk -l "$1"
 }

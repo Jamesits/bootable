@@ -1,6 +1,9 @@
 #!/hint/bash
 # shellcheck disable=SC2034 # do not check for unused variables
 
+# tags
+BOOTABLE_TEMP_TAG_PREFIX="localhost/bootable/build:"
+
 # Scratch directory location
 # Currently this directory should be inside $BOOTABLE_PROJECT_ROOT
 BOOTABLE_GLOBAL_TMP_DIR="${BOOTABLE_PROJECT_ROOT}/tmp"
