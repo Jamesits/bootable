@@ -116,7 +116,7 @@ bootable::toolchain mkswap "${BOOTABLE_DISK_LOOPBACK_DEVICE}p3"
 # - metadata_csum_seed for GRUB2 on CentOS 7 https://www.linuxquestions.org/questions/slackware-14/grub-install-error-unknown-filesystem-4175723528/
 # - orphan_file for e2fsck on Fedora 38
 >&2 printf "[*] Format: Root\n"
-bootable::toolchain mkfs -t ext4 -O ^metadata_csum_seed,^orphan_file "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4"
+bootable::toolchain mkfs -t ext4 -O '^metadata_csum_seed,^orphan_file' "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4"
 
 # Create mount tree for chrooting and initramfs builds
 >&2 printf "[*] Populate: /\n"

@@ -23,7 +23,9 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
 
 # Usage: $0 <context-dir> <file> <output-tag>
 bootable::container::build::image() {
-    docker build --file="$2" --tag="$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
+    local FILE
+    FILE=$(readlink -e "$2") # one day suddenly Docker stopped recoginzing symlinks
+    docker build --file="$FILE" --tag="$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
     return $?
 }
 
