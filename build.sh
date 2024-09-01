@@ -6,6 +6,7 @@ BOOTABLE_PROJECT_ROOT="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/nul
 BOOTABLE_PLUGINS_DIR="${BOOTABLE_PROJECT_ROOT}/scripts"
 . "${BOOTABLE_PLUGINS_DIR}/config.sh"
 . "${BOOTABLE_PLUGINS_DIR}/common.sh"
+. "${BOOTABLE_PLUGINS_DIR}/hooks.sh"
 . "${BOOTABLE_PLUGINS_DIR}/plugin-ui-require-root.sh"
 
 # process command line args
@@ -174,7 +175,9 @@ bootable::util::invoke_hook "plugin::bootloader::install"
 for dir in "${BOOTABLE_MOUNT_ROOT}/"*; do
     umount --recursive --verbose --lazy "${dir}" || true
 done
+bootable::util::invoke_hook "user::sysprep::pre"
 bootable::util::sysprep "${BOOTABLE_MOUNT_ROOT}"
+bootable::util::invoke_hook "user::sysprep::post"
 
 # Temporary directory cleanup
 umount --recursive --verbose "${BOOTABLE_MOUNT_ROOT}"

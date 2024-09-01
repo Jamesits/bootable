@@ -61,9 +61,6 @@ bootable::util::clean_dir() {
     find "$1" -mindepth 1 -delete
 }
 
-# Empty implementations of user hooks
-bootable::user::config_load::post() { true; }
-
 # Clean up the root filesystem
 # Usage: bootable::util::sysprep <root-dir>
 bootable::util::sysprep() {
