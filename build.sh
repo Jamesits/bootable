@@ -8,9 +8,15 @@ BOOTABLE_PLUGINS_DIR="${BOOTABLE_PROJECT_ROOT}/scripts"
 . "${BOOTABLE_PLUGINS_DIR}/common.sh"
 . "${BOOTABLE_PLUGINS_DIR}/plugin-ui-require-root.sh"
 
+# process command line args
+BOOTABLE_BUILD_CONFIG_DIR="$1"
+BOOTABLE_IMAGE_EXPORT_FILENAME="${2:-}"
+if [ -n "${BOOTABLE_IMAGE_EXPORT_FILENAME}" ]; then
+    BOOTABLE_IMAGE_EXPORT_FILENAME="$(readlink -s --canonicalize-missing "${BOOTABLE_IMAGE_EXPORT_FILENAME}")"
+fi
+
 # Load user config
 # We should do this as early as possible
-BOOTABLE_BUILD_CONFIG_DIR="$1"
 >&2 printf "[*] Using config %s\n" "${BOOTABLE_BUILD_CONFIG_DIR}"
 bootable::util::source "${BOOTABLE_BUILD_CONFIG_DIR}/config.sh"
 bootable::util::invoke_hook "user::config_load::post"
@@ -173,4 +179,11 @@ bootable::util::sysprep "${BOOTABLE_MOUNT_ROOT}"
 umount --recursive --verbose "${BOOTABLE_MOUNT_ROOT}"
 bootable::toolchain losetup -d "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
 
->&2 printf "[i] Image build succeeded.\n"
+if [ -n "${BOOTABLE_IMAGE_EXPORT_FILENAME}" ]; then
+    >&2 printf "[*] Exporting the disk image to %s...\n" "${BOOTABLE_IMAGE_EXPORT_FILENAME}"
+    mv "${BOOTABLE_SCOPED_TMP_DIR}/boot.img" "${BOOTABLE_IMAGE_EXPORT_FILENAME}"
+else
+    >&2 printf "[i] The disk image is at %s...\n" "${BOOTABLE_SCOPED_TMP_DIR}/boot.img"
+fi
+
+>&2 printf "[+] Image build succeeded.\n"
