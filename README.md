@@ -22,7 +22,7 @@ sudo ./build.sh path/to/config/dir path/to/final/disk.img
 
 Example configs can be found in `tests` dir.
 
-To fire up a VM to test the new image: `./smoke_test.sh <efi/legacy> path/to/final/disk.img`
+To fire up a VM to test the new image: `./smoke_test.sh <efi|legacy> path/to/final/disk.img`
 
 ### Selfhosting the Toolchain
 
