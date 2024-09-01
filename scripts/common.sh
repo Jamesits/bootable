@@ -55,5 +55,29 @@ bootable::util::random_string() {
     tr -dc A-Za-z0-9 </dev/urandom | head -c "$1"; echo
 }
 
+# Remove all files under the directory recursively, but not the directory itself.
+# Usage: bootable::util::clean_dir <dir>
+bootable::util::clean_dir() {
+    find "$1" -mindepth 1 -delete
+}
+
 # Empty implementations of user hooks
 bootable::user::config_load::post() { true; }
+
+# Clean up the root filesystem
+# Usage: bootable::util::sysprep <root-dir>
+bootable::util::sysprep() {
+    local ROOTDIR="$1"
+    >&2 printf "[*] Sysprep: %s\n" "${ROOTDIR}"
+
+    # TODO: adopt https://github.com/libguestfs/guestfs-tools/tree/master/sysprep
+
+    # clean up temporary files
+    bootable::util::clean_dir "${ROOTDIR}/run"
+    bootable::util::clean_dir "${ROOTDIR}/tmp"
+    # remove container markers introduced by the build system
+    # https://github.com/systemd/systemd/blob/9afb4aea0070fe9a9b3fe0f452fab17e1205219c/src/basic/virt.c#L658
+    rm -fv --one-file-system "${ROOTDIR}/.dockerenv" "${ROOTDIR}/.containerenv"
+    # remove machine ID
+    rm -fv --one-file-system "${ROOTDIR}/etc/machine-id" "${ROOTDIR}/var/lib/dbus/machine-id"
+}

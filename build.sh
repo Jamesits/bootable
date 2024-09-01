@@ -163,6 +163,12 @@ bootable::util::invoke_hook "plugin::initrd::generate"
 bootable::util::invoke_hook "plugin::bootloader::install"
 # TODO: SELinux permissions
 
+# sysprep
+for dir in "${BOOTABLE_MOUNT_ROOT}/"*; do
+    umount --recursive --verbose --lazy "${dir}" || true
+done
+bootable::util::sysprep "${BOOTABLE_MOUNT_ROOT}"
+
 # Cleanup
 umount --recursive --verbose "${BOOTABLE_MOUNT_ROOT}"
 bootable::toolchain losetup -d "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
