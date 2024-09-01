@@ -14,8 +14,25 @@ Host OS assumptions:
 
 ## Building
 
+### Building the Final Image
+
 ```shell
-sudo ./build.sh <distro>/<version>
+sudo ./build.sh path/to/config/dir
+```
+
+Example configs can be found in `tests` dir.
+
+### Selfhosting the Toolchain
+
+Normally you can pull pre-built toolchain images off the Docker Hub, but in case that you want to build it yourself:
+
+```
+sudo ./create_toolchain_image.sh
+
+# for distros needed
+DISTRO="debian/bookworm" # should be a directory under distros dir
+TAG="jamesits/bootable:base-${DISTRO//\//-}-grub2-latest"
+sudo ./create_base_image.sh "$distro" "${TAG}" "grub2"
 ```
 
 ## Known Issues
