@@ -20,6 +20,7 @@ fi
 # We should do this as early as possible
 >&2 printf "[*] Using config %s\n" "${BOOTABLE_BUILD_CONFIG_DIR}"
 bootable::util::source "${BOOTABLE_BUILD_CONFIG_DIR}/config.sh"
+bootable::util::source "${BOOTABLE_BUILD_CONFIG_DIR}/hooks.sh"
 bootable::util::invoke_hook "user::config_load::post"
 
 # Create temporary directory
