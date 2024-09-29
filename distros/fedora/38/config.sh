@@ -5,4 +5,4 @@
 BOOTABLE_DOCKER_BUILD_ARGS+=(
     "--label=bootable.plugin.bootloader.grub2.id=grub2"
 )
-BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/fedora:38"
+BOOTABLE_SOURCE_IMAGE="docker.io/library/fedora:38"

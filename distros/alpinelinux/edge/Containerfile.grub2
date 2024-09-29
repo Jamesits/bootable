@@ -1,4 +1,4 @@
-ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/alpine:edge
+ARG BOOTABLE_SOURCE_IMAGE=docker.io/library/alpine:edge
 FROM "$BOOTABLE_SOURCE_IMAGE"
 LABEL bootable.distro.like="alpinelinux"
 LABEL bootable.distro.like-version="edge"

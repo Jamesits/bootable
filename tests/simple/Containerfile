@@ -1,4 +1,4 @@
-ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/jamesits/bootable:base-debian-bookworm-grub2-latest
+ARG BOOTABLE_SOURCE_IMAGE=docker.io/jamesits/bootable:base-debian-bookworm-grub2-latest
 FROM "$BOOTABLE_SOURCE_IMAGE"
 
 RUN passwd -d root

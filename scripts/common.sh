@@ -135,6 +135,6 @@ bootable::util::chroot_teardown() {
 bootable::util:chroot() {
     local ROOTDIR="$1"
     shift
-    >&2 printf "[i] chroot: %s" "${ROOTDIR}" "$@"
+    >&2 printf "[i] chroot: %s %s\n" "${ROOTDIR}" "$*"
     unshare --fork --mount --root "${ROOTDIR}" "$@"
 }

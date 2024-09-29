@@ -132,36 +132,26 @@ mkdir -p "${BOOTABLE_MOUNT_ROOT}"
 mount -t ext4 "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4" "${BOOTABLE_MOUNT_ROOT}"
 bootable::toolchain tar --same-owner -pxf "${BOOTABLE_SCOPED_TMP_DIR}/rootfs.tar" -C "${BOOTABLE_MOUNT_ROOT}"
 install --owner=0 --group=0 --mode=644 --preserve-timestamps --target-directory="${BOOTABLE_MOUNT_ROOT}/etc" "${BOOTABLE_SCOPED_TMP_DIR}/bootable-release"
+# setup mount points
+bootable::util::chroot_setup "${BOOTABLE_MOUNT_ROOT}"
+
 >&2 printf "[*] Populate: /boot/efi\n"
+# copy the origin contents over
+mkdir -p "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+cp -a "${BOOTABLE_MOUNT_ROOT}/boot/efi/." "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+rm -rf "${BOOTABLE_MOUNT_ROOT}/boot/efi"
+umount "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+# mount to actual location
 mkdir -p "${BOOTABLE_MOUNT_ROOT}/boot/efi"
 mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_MOUNT_ROOT}/boot/efi"
-mount_tmpfs() {
-    >&2 printf "[*] Populate: %s\n" "$1"
-    mkdir -p -- "${BOOTABLE_MOUNT_ROOT}$1"
-    mount -t tmpfs tmpfs "${BOOTABLE_MOUNT_ROOT}$1"
-}
-mount_bind() {
-    >&2 printf "[*] Populate: %s\n" "$1"
-    if [ ! -e "${BOOTABLE_MOUNT_ROOT}$1" ]; then
-        if [ -d "$1" ]; then
-            mkdir -p -- "${BOOTABLE_MOUNT_ROOT}$1"
-        else
-            touch -- "${BOOTABLE_MOUNT_ROOT}$1"
-        fi
-    fi
-    mount --bind "$1" "${BOOTABLE_MOUNT_ROOT}$1"
-    mount --make-rslave "${BOOTABLE_MOUNT_ROOT}$1"
-}
-mount_bind /dev
-mount_bind /proc
-mount_tmpfs /run
-mount_bind /run/udev # https://wiki.gentoo.org/wiki/GRUB#os-prober_and_UEFI_in_chroot
-mount_bind /sys
-mount_tmpfs /tmp
-mount_bind /etc/resolv.conf
 
 # Post-install hooks
 # TODO: locale-gen
+# bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" locale-gen
+# bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" localedef -cv
+# https://github.com/CentOS/sig-cloud-instance-build/issues/7#issuecomment-231618917
+bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" bash -c ':> /etc/sysconfig/i18n'
 # TODO: Network manager
 # fstab
 bootable::util::invoke_hook "plugin::fstab::generate"
@@ -171,11 +161,11 @@ bootable::util::invoke_hook "plugin::initrd::generate"
 bootable::util::invoke_hook "plugin::bootloader::install"
 # TODO: SELinux permissions
 
+# Remove mount points before sysprep
+bootable::util::chroot_teardown "${BOOTABLE_MOUNT_ROOT}"
+
 # Sysprep
 # Remove all the mounted host filesystems first so we don't accidentally remove anything else
-for dir in "${BOOTABLE_MOUNT_ROOT}/"*; do
-    umount --recursive --verbose --lazy "${dir}" || true
-done
 bootable::util::invoke_hook "user::sysprep::pre"
 bootable::util::sysprep "${BOOTABLE_MOUNT_ROOT}"
 bootable::util::invoke_hook "user::sysprep::post"

@@ -1,4 +1,4 @@
-ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/archlinux:base
+ARG BOOTABLE_SOURCE_IMAGE=docker.io/library/archlinux:base
 FROM "$BOOTABLE_SOURCE_IMAGE"
 LABEL bootable.distro.like="archlinux"
 LABEL bootable.distro.like-version="rolling"

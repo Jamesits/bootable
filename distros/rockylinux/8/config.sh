@@ -7,4 +7,4 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
     "--label=bootable.plugin.bootloader.grub2.efi-id=rocky"
     "--label=bootable.plugin.bootloader.grub2.dnf-secure-boot=1"
 )
-BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/rockylinux:8"
+BOOTABLE_SOURCE_IMAGE="docker.io/library/rockylinux:8"

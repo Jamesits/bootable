@@ -5,4 +5,4 @@
 BOOTABLE_DOCKER_BUILD_ARGS+=(
     "--label=bootable.plugin.bootloader.grub2.external-tools=1"
 )
-BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/debian:buster-slim"
+BOOTABLE_SOURCE_IMAGE="docker.io/library/debian:buster-slim"

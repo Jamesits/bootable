@@ -7,4 +7,4 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
     "--label=bootable.plugin.bootloader.grub2.efi-id=almalinux"
     "--label=bootable.plugin.bootloader.grub2.dnf-secure-boot=1"
 )
-BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/almalinux:9"
+BOOTABLE_SOURCE_IMAGE="docker.io/library/almalinux:9"

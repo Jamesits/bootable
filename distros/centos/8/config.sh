@@ -8,4 +8,4 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
     "--label=bootable.plugin.bootloader.grub2.efi-id=centos"
     "--label=bootable.plugin.bootloader.grub2.dnf-secure-boot=1"
 )
-export BOOTABLE_SOURCE_IMAGE="registry.hub.docker.com/library/centos:8"
+export BOOTABLE_SOURCE_IMAGE="docker.io/library/centos:8"

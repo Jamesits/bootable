@@ -1,4 +1,4 @@
-ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/fedora:rawhide
+ARG BOOTABLE_SOURCE_IMAGE=docker.io/library/fedora:rawhide
 FROM "$BOOTABLE_SOURCE_IMAGE"
 LABEL bootable.distro.like="fedora"
 LABEL bootable.distro.like-version="rawhide"

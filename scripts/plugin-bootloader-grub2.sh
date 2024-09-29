@@ -47,7 +47,7 @@ _grub2_config_unset() {
 _grub2_generate_config() {
     if [ -d "$(dirname "${BOOTABLE_MOUNT_ROOT}$1")" ]; then
         >&2 printf "[+] GRUB: regenerate config on %s\n" "$1"
-        PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1"
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1"
     else
         >&2 printf "[-] GRUB: skipped regenerate config on %s\n" "$1"
     fi
@@ -56,7 +56,7 @@ _grub2_generate_config() {
 # generate chain load config
 # This file will normally be generated during `grub-install` and does not need to be updated
 # https://ubuntuforums.org/showthread.php?t=2485384
-_grub2_genreate_bootstrap_config() {
+_grub2_generate_bootstrap_config() {
     cat > "${BOOTABLE_MOUNT_ROOT}$1" <<EOF
 search.fs_uuid $(bootable::toolchain blkid -s UUID -o value "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4") root
 set prefix=(\$root)'/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}'
@@ -162,13 +162,13 @@ bootable::plugin::bootloader::install() {
 
     if [ "${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
         # EL8+
-        # /etc/grub2-efi.cfg links to ./boot/efi/EFI/almalinux/grub.cfg or ../boot/grub2/grub.cfg, but the symlink parent directory has not been created now
+        # /etc/grub2-efi.cfg links to ../boot/efi/EFI/almalinux/grub.cfg or ../boot/grub2/grub.cfg, but the symlink parent directory has not been created now
         # https://forums.centos.org/viewtopic.php?t=78909#p331620
         for file in "/etc/grub.cfg" "/etc/grub2.cfg" "/etc/grub2-efi.cfg"; do
             if [ -L "${BOOTABLE_MOUNT_ROOT}${file}" ]; then
-                >&2 printf "[i] Using inferred GRUB2 config file path: %s -> %s\n" "${file}" "$(readlink "${BOOTABLE_MOUNT_ROOT}${file}")"
+                >&2 printf "[i] Using inferred GRUB2 config file path: %s\n" "${file}"
                 # shellcheck disable=SC2016
-                bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; mkdir -p \"\$(dirname \$(readlink -m \"${file}\"))\"; grub2-mkconfig -o \"${file}\""
+                bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "${file}"
             fi
         done
 
@@ -176,7 +176,7 @@ bootable::plugin::bootloader::install() {
         # fix for *EL 9 where /etc/grub2.cfg and /etc/grub2-efi.cfg points to the same file
         if [ ! -f "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg" ]; then
             mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}"
-            _grub2_genreate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
+            _grub2_generate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
         fi
     else
         # for legacy boot
@@ -189,12 +189,12 @@ bootable::plugin::bootloader::install() {
         # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
         # https://askubuntu.com/a/1406590
         mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}"
-        _grub2_genreate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
+        _grub2_generate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_EFI_ID}/grub.cfg"
         # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
         # This can be debugged by using `set` in the recovery shell. Here's a workaround.
         # This file is harmless for other distros.
         mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}"
-        _grub2_genreate_bootstrap_config "/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
+        _grub2_generate_bootstrap_config "/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
     fi
 
     _grub2_legacy_compat_fix "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"

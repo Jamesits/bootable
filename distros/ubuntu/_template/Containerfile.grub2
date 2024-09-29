@@ -1,4 +1,4 @@
-ARG BOOTABLE_SOURCE_IMAGE=registry.hub.docker.com/library/ubuntu:jammy
+ARG BOOTABLE_SOURCE_IMAGE=docker.io/library/ubuntu:jammy
 FROM "$BOOTABLE_SOURCE_IMAGE"
 LABEL bootable.distro.like="ubuntu"
 LABEL bootable.distro.like-version="jammy"
