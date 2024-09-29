@@ -2,6 +2,8 @@
 
 export DOCKER_BUILDKIT=1
 BOOTABLE_DOCKER_BUILD_ARGS+=(
+    "--pull"
+
     # BuildKit cache
     "--build-arg"
     "BUILDKIT_INLINE_CACHE=1"
