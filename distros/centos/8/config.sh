@@ -4,8 +4,8 @@
 
 # load plugins
 BOOTABLE_DOCKER_BUILD_ARGS+=(
-    "--label=bootable.plugin.bootloader.grub2.id=grub2"
-    "--label=bootable.plugin.bootloader.grub2.efi-id=centos"
+    "--label=bootable.plugin.bootloader.grub2.prefix=grub2"
+    "--label=bootable.plugin.bootloader.grub2.distro-efi=centos"
     "--label=bootable.plugin.bootloader.grub2.dnf-secure-boot=1"
 )
 export BOOTABLE_SOURCE_IMAGE="docker.io/library/centos:8"

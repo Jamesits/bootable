@@ -137,11 +137,13 @@ bootable::util::chroot_setup "${BOOTABLE_MOUNT_ROOT}"
 
 >&2 printf "[*] Populate: /boot/efi\n"
 # copy the origin contents over
-mkdir -p "${BOOTABLE_SCOPED_TMP_DIR}/efi"
-mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_SCOPED_TMP_DIR}/efi"
-cp -a "${BOOTABLE_MOUNT_ROOT}/boot/efi/." "${BOOTABLE_SCOPED_TMP_DIR}/efi"
-rm -rf "${BOOTABLE_MOUNT_ROOT}/boot/efi"
-umount "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+if [ -d "${BOOTABLE_MOUNT_ROOT}/boot/efi" ]; then
+    mkdir -p "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+    mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+    cp -a "${BOOTABLE_MOUNT_ROOT}/boot/efi/." "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+    rm -rf "${BOOTABLE_MOUNT_ROOT}/boot/efi"
+    umount "${BOOTABLE_SCOPED_TMP_DIR}/efi"
+fi
 # mount to actual location
 mkdir -p "${BOOTABLE_MOUNT_ROOT}/boot/efi"
 mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_MOUNT_ROOT}/boot/efi"

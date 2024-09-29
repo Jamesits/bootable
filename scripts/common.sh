@@ -103,6 +103,7 @@ bootable::util::chroot_setup() {
     # /sys
     bootable::util::mount_bind "/sys" "${ROOTDIR}/sys"
     # /dev
+    # full /dev is required for GRUB2 installation
     bootable::util::mount_bind "/dev" "${ROOTDIR}/dev"
     # mount -t tmpfs tmpfs "${ROOTDIR}/dev"
     # ln -sf "/proc/self/fd" "${ROOTDIR}/dev/fd"
@@ -136,5 +137,6 @@ bootable::util:chroot() {
     local ROOTDIR="$1"
     shift
     >&2 printf "[i] chroot: %s %s\n" "${ROOTDIR}" "$*"
-    unshare --fork --mount --root "${ROOTDIR}" "$@"
+    # Debian Bullseye: need /sbin and /bin added to the PATH since it is not usrmerge'd yet
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin unshare --fork --mount --root "${ROOTDIR}" "$@"
 }
