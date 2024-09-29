@@ -12,6 +12,8 @@ RUN rm -rf /etc/apt/apt.conf.d/docker-*
 # Notes:
 # - grub-pc and grub-efi-amd64 conflicts
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
+    # https://bugs.launchpad.net/ubuntu-docker-images/+bug/2078583
+    && (command -v unminimize || DEBIAN_FRONTEND=noninteractive apt-get install -y unminimize) \
     && (yes y | unminimize) \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y linux-generic initramfs-tools grub-pc grub-efi-amd64-bin efibootmgr shim-signed mokutil systemd kmod locales \
     && rm -rf /var/lib/apt/lists/*
