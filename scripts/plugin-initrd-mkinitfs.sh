@@ -6,6 +6,6 @@ bootable::plugin::initrd::generate() {
     for kp in "${BOOTABLE_MOUNT_ROOT}/lib/modules/"*; do
         local KERNEL
         KERNEL="$(basename "$kp")"
-        chroot "${BOOTABLE_MOUNT_ROOT}" /bin/ash -c "set -Eeu; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; for i in /lib/modules/*; do mkinitfs $KERNEL; done"
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" /bin/ash -c "set -Eeu; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; for i in /lib/modules/*; do mkinitfs $KERNEL; done"
     done
 }

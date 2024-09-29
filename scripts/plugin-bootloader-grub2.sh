@@ -14,20 +14,66 @@ BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB="$(bootable::container::label::ge
 # Enable serial console
 BOOTABLE_CAVEAT_SERIAL_CONSOLE=${BOOTABLE_CAVEAT_SERIAL_CONSOLE:-0}
 
+_grub2_unfuck_env() {
+    # Unfuck grubenv
+    # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
+    if [ -L "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
+        >&2 printf "[!] GRUB2: fix grubenv\n"
+        rm -fv "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" grub2-editenv "/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" create
+    fi
+}
+
+_grub2_config_set() {
+    local GRUB_CONFIG="$1"
+    local KEY="$2"
+    local VALUE="$3"
+
+    if grep "${KEY}=" "${GRUB_CONFIG}" >/dev/null; then
+        sed -Ei'' "s/^#?${KEY}=.*$/${KEY}=\"${VALUE}\"/g" "${GRUB_CONFIG}"
+    else
+        printf '%s="%s"\n' "${KEY}" "${VALUE}" >> "${GRUB_CONFIG}"
+    fi
+}
+
+_grub2_config_unset() {
+    local GRUB_CONFIG="$1"
+    local KEY="$2"
+
+    sed -Ei'' "s/^${KEY}=(.*)$/#${KEY}=\1/g" "${GRUB_CONFIG}"
+}
+
+# generate full GRUB2 config
+_grub2_generate_config() {
+    if [ -d "$(dirname "${BOOTABLE_MOUNT_ROOT}$1")" ]; then
+        >&2 printf "[+] GRUB: regenerate config on %s\n" "$1"
+        PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1"
+    else
+        >&2 printf "[-] GRUB: skipped regenerate config on %s\n" "$1"
+    fi
+}
+
+# generate chain load config
+# This file will normally be generated during `grub-install` and does not need to be updated
+# https://ubuntuforums.org/showthread.php?t=2485384
+_grub2_genreate_bootstrap_config() {
+    cat > "${BOOTABLE_MOUNT_ROOT}$1" <<EOF
+search.fs_uuid $(bootable::toolchain blkid -s UUID -o value "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4") root
+set prefix=(\$root)'/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}'
+configfile \$prefix/grub.cfg
+EOF
+}
+
+# Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
+_grub2_legacy_compat_fix() {
+    sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
+}
+
 bootable::plugin::bootloader::install() {
     # detect grub
     local GRUB_INSTALL=("${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-install")
     local GRUB_MKCONFIG=("${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}-mkconfig")
 
-    _grub2_unfuck_env() {
-        # Unfuck grubenv
-        # *EL: `/boot/grub2/grubenv`` is symlinked to `../efi/EFI/centos/grubenv` which does not exist and breaks `grub-install`
-        if [ -L "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" ]; then
-            >&2 printf "[!] GRUB2: fix grubenv\n"
-            rm -fv "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv"
-            chroot "${BOOTABLE_MOUNT_ROOT}" grub2-editenv "/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grubenv" create
-        fi
-    }
     _grub2_unfuck_env
 
     # EFI
@@ -50,8 +96,8 @@ bootable::plugin::bootloader::install() {
         # - It would make /boot/grub/grubenv a symlink which breaks everything
         # https://bugzilla.redhat.com/show_bug.cgi?id=1917213
         # https://docs.fedoraproject.org/en-US/fedora/rawhide/system-administrators-guide/kernel-module-driver-configuration/Working_with_the_GRUB_2_Boot_Loader/#sec-Resetting_and_Reinstalling_GRUB_2
-        chroot "${BOOTABLE_MOUNT_ROOT}" dnf -y reinstall grub2-efi shim
-        chroot "${BOOTABLE_MOUNT_ROOT}" dnf clean all
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" dnf -y reinstall grub2-efi shim
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" dnf clean all
 
         # *EL 8: manually copy kernel to /boot (this should happen during the installation of "kernel" package)
         for kp in "${BOOTABLE_MOUNT_ROOT}/lib/modules/"*; do
@@ -61,7 +107,7 @@ bootable::plugin::bootloader::install() {
         done
     else
         # use the grub-install binary that comes with the distro
-        chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=x86_64-efi --recheck --force --skip-fs-probe --efi-directory=/boot/efi --no-nvram --removable "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
     fi
 
     # Legacy
@@ -78,29 +124,10 @@ bootable::plugin::bootloader::install() {
             "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
     else
         # use the grub-install binary that comes with the distro
-        chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
+        bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_INSTALL[@]}" --target=i386-pc --recheck --force --skip-fs-probe --disk-module=native "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
     fi
 
     # Update GRUB config
-    _grub2_config_set() {
-        local GRUB_CONFIG="$1"
-        local KEY="$2"
-        local VALUE="$3"
-
-        if grep "${KEY}=" "${GRUB_CONFIG}" >/dev/null; then
-            sed -Ei'' "s/^#?${KEY}=.*$/${KEY}=\"${VALUE}\"/g" "${GRUB_CONFIG}"
-        else
-            printf '%s="%s"\n' "${KEY}" "${VALUE}" >> "${GRUB_CONFIG}"
-        fi
-    }
-
-    _grub2_config_unset() {
-        local GRUB_CONFIG="$1"
-        local KEY="$2"
-
-        sed -Ei'' "s/^${KEY}=(.*)$/#${KEY}=\1/g" "${GRUB_CONFIG}"
-    }
-
     >&2 printf "[*] GRUB: config\n"
     local GRUB_CONFIG="${BOOTABLE_MOUNT_ROOT}/etc/default/grub"
     # Disable os-prober
@@ -133,35 +160,15 @@ bootable::plugin::bootloader::install() {
         _grub2_config_set "${GRUB_CONFIG}" "GRUB_CMDLINE_LINUX" "mitigations=off tsx_async_abort=off console=ttyS0 console=tty0 edd=off"
     fi
 
-    # generate full GRUB2 config
-    _grub2_generate_config() {
-        if [ -d "$(dirname "${BOOTABLE_MOUNT_ROOT}$1")" ]; then
-            >&2 printf "[+] GRUB: regenerate config on %s\n" "$1"
-            PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "$1"
-        else
-            >&2 printf "[-] GRUB: skipped regenerate config on %s\n" "$1"
-        fi
-    }
-
-    # generate chain load config
-    # This file will normally be generated during `grub-install` and does not need to be updated
-    # https://ubuntuforums.org/showthread.php?t=2485384
-    _grub2_genreate_bootstrap_config() {
-        cat > "${BOOTABLE_MOUNT_ROOT}$1" <<EOF
-search.fs_uuid $(bootable::toolchain blkid -s UUID -o value "${BOOTABLE_DISK_LOOPBACK_DEVICE}p4") root
-set prefix=(\$root)'/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}'
-configfile \$prefix/grub.cfg
-EOF
-    }
-
     if [ "${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
         # EL8+
+        # /etc/grub2-efi.cfg links to ./boot/efi/EFI/almalinux/grub.cfg or ../boot/grub2/grub.cfg, but the symlink parent directory has not been created now
         # https://forums.centos.org/viewtopic.php?t=78909#p331620
         for file in "/etc/grub.cfg" "/etc/grub2.cfg" "/etc/grub2-efi.cfg"; do
             if [ -L "${BOOTABLE_MOUNT_ROOT}${file}" ]; then
                 >&2 printf "[i] Using inferred GRUB2 config file path: %s -> %s\n" "${file}" "$(readlink "${BOOTABLE_MOUNT_ROOT}${file}")"
                 # shellcheck disable=SC2016
-                chroot "${BOOTABLE_MOUNT_ROOT}" bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; grub2-mkconfig -o \"${file}\""
+                bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" bash -c "set -Eeuo pipefail; export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH; mkdir -p \"\$(dirname \$(readlink -m \"${file}\"))\"; grub2-mkconfig -o \"${file}\""
             fi
         done
 
@@ -190,10 +197,6 @@ EOF
         _grub2_genreate_bootstrap_config "/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
     fi
 
-    # Fix GRUB2 config file on CentOS 7 to be compatible on both EFI and legacy boot
-    _grub2_legacy_compat_fix() {
-        sed -Ei'' 's/linuxefi\ /linux\ /g; s/initrdefi\ /initrd\ /g' "$1"
-    }
     _grub2_legacy_compat_fix "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_ID}/grub.cfg"
 
     _grub2_unfuck_env

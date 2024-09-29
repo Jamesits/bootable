@@ -78,3 +78,63 @@ bootable::util::sysprep() {
     # remove machine ID
     rm -fv --one-file-system "${ROOTDIR}/etc/machine-id" "${ROOTDIR}/var/lib/dbus/machine-id"
 }
+
+# Bind mount file or directory $1 to $2
+bootable::util::mount_bind() {
+    if [ ! -e "$2" ]; then
+        if [ -d "$1" ]; then
+            mkdir -p -- "$2"
+        else
+            touch -- "$2"
+        fi
+    fi
+    mount --rbind "$1" "$2"
+    mount --make-rslave "$2"
+}
+
+bootable::util::chroot_setup() {
+    local ROOTDIR="$1"
+
+    # create a mount namespace
+    bootable::util::mount_bind "${ROOTDIR}" "${ROOTDIR}"
+
+    # /proc
+    mount -t proc -o nosuid,noexec,nodev proc "${ROOTDIR}/proc"
+    # /sys
+    bootable::util::mount_bind "/sys" "${ROOTDIR}/sys"
+    # /dev
+    bootable::util::mount_bind "/dev" "${ROOTDIR}/dev"
+    # mount -t tmpfs tmpfs "${ROOTDIR}/dev"
+    # ln -sf "/proc/self/fd" "${ROOTDIR}/dev/fd"
+    # ln -sf "/proc/self/fd/0" "${ROOTDIR}/dev/stdin"
+    # ln -sf "/proc/self/fd/1" "${ROOTDIR}/dev/stdout"
+    # ln -sf "/proc/self/fd/2" "${ROOTDIR}/dev/stderr"
+    # bootable::util::mount_bind "/dev/full" "${ROOTDIR}/dev/full"
+    # bootable::util::mount_bind "/dev/null" "${ROOTDIR}/dev/null"
+    # bootable::util::mount_bind "/dev/random" "${ROOTDIR}/dev/random"
+    # bootable::util::mount_bind "/dev/urandom" "${ROOTDIR}/dev/urandom"
+    # bootable::util::mount_bind "/dev/tty" "${ROOTDIR}/dev/tty"
+    # bootable::util::mount_bind "/dev/zero" "${ROOTDIR}/dev/zero"
+    # /run
+    mount -t tmpfs -o nosuid,nodev,mode=0755 tmpfs "${ROOTDIR}/run"
+    # /run/udev
+    # https://wiki.gentoo.org/wiki/GRUB#os-prober_and_UEFI_in_chroot
+    bootable::util::mount_bind "/run/udev" "${ROOTDIR}/run/udev"
+    # /tmp
+    mount -t tmpfs -o mode=1777,strictatime,nodev,nosuid tmpfs "${ROOTDIR}/tmp"
+    # /etc/resolv.conf
+    bootable::util::mount_bind "/etc/resolv.conf" "${ROOTDIR}/etc/resolv.conf"
+}
+
+bootable::util::chroot_teardown() {
+    for dir in "$1/"*; do
+        umount --recursive --verbose --lazy "${dir}" || true
+    done
+}
+
+bootable::util:chroot() {
+    local ROOTDIR="$1"
+    shift
+    >&2 printf "[i] chroot: %s" "${ROOTDIR}" "$@"
+    unshare --fork --mount --root "${ROOTDIR}" "$@"
+}

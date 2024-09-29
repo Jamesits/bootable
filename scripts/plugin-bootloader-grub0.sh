@@ -8,5 +8,5 @@ bootable::plugin::bootloader::install() {
     cat > "${BOOTABLE_MOUNT_ROOT}/boot/grub/device.map" <<EOF
 (hd0) ${BOOTABLE_DISK_LOOPBACK_DEVICE}
 EOF
-    PATH=/usr/sbin:/sbin:/usr/bin:/bin chroot "${BOOTABLE_MOUNT_ROOT}" "grub-install" --root-directory=/ --no-floppy "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
+    bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "grub-install" --root-directory=/ --no-floppy "${BOOTABLE_DISK_LOOPBACK_DEVICE}"
 }

@@ -5,8 +5,10 @@ Docker-based universal Linux image builder.
 ## Prerequisites
 
 Packages:
-- Docker (with buildx support)
+- Docker (with buildx support), or `podman-docker`
 - Git
+- jq
+- util-linux
 
 Host OS assumptions:
 - Runs SystemD and udevd
