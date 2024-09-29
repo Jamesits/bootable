@@ -17,6 +17,6 @@ RUN [ -f /etc/apt/sources.list.d/debian.sources ] && sed -Ei'' 's/^Components: .
 
 # Notes:
 # - grub-efi-amd64 and grub-pc conflict with each other; install *-bin works https://askubuntu.com/a/1253218; grub-cloud-amd64 does this automatically for us
-RUN apt-get update -y \
-    && apt-get install -y linux-image-amd64 firmware-linux-nonfree initramfs-tools grub-cloud-amd64 efibootmgr shim-signed mokutil systemd-sysv kmod locales ca-certificates \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y linux-image-amd64 firmware-linux-nonfree initramfs-tools grub-cloud-amd64 efibootmgr shim-signed mokutil systemd-sysv kmod locales ca-certificates \
     && rm -rf /var/lib/apt/lists/*
