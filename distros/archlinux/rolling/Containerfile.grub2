@@ -7,8 +7,7 @@ LABEL bootable.plugin.bootloader="grub2"
 LABEL bootable.plugin.initrd="mkinitcpio"
 
 # fix polkit permission problem on the default archlinux docker image
-RUN chmod 755 /usr/share/polkit-1/rules.d \
-    && chmod 755 /var/log/audit
+RUN chmod 755 /usr/share/polkit-1/rules.d
 
 RUN pacman -Syu --noconfirm \
     && pacman -S --noconfirm base linux linux-firmware mkinitcpio amd-ucode intel-ucode grub shim mokutil \
