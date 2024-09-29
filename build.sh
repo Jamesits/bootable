@@ -148,10 +148,6 @@ mount -t vfat "${BOOTABLE_DISK_LOOPBACK_DEVICE}p2" "${BOOTABLE_MOUNT_ROOT}/boot/
 
 # Post-install hooks
 # TODO: locale-gen
-# bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" locale-gen
-# bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" localedef -cv
-# https://github.com/CentOS/sig-cloud-instance-build/issues/7#issuecomment-231618917
-bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" bash -c ':> /etc/sysconfig/i18n'
 # TODO: Network manager
 # fstab
 bootable::util::invoke_hook "plugin::fstab::generate"

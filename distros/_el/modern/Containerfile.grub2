@@ -6,5 +6,7 @@ LABEL bootable.plugin.partition="gpt"
 LABEL bootable.plugin.bootloader="grub2"
 LABEL bootable.plugin.initrd="dracut"
 
-RUN dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 systemd \
+RUN dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 systemd glibc-locale-source glibc-langpack-en \
+    && dnf -y reinstall glibc-common \
+    && localedef -c -i en_US -f UTF-8 en_US.UTF-8 \
     && dnf clean all

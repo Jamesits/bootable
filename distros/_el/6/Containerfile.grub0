@@ -10,5 +10,7 @@ LABEL bootable.plugin.initrd.dracut.regenerate-all="0"
 # switch to vault.centos.org
 RUN sed -Ei'' 's/mirror.centos.org/vault.centos.org/g; s/#baseurl=/baseurl=/g; s/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
 
-RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut grub grubby sysvinit ca-certificates \
+RUN yum -y --setopt=skip_missing_names_on_install=False install kernel dracut grub grubby sysvinit ca-certificates glibc-locale-source glibc-langpack-en \
+    && yum -y reinstall glibc-common \
+    && localedef -c -i en_US -f UTF-8 en_US.UTF-8 \
     && yum clean all

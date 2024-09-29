@@ -10,5 +10,7 @@ LABEL bootable.plugin.initrd="dracut"
 # - `grub2-efi` and `grub2-efi-modules` might install arm64 versions for you; let's be explicit about the architecture
 # - `fedora-release-identity-container` need to be replaced so we does not identify as a container image
 RUN dnf -y install --allowerasing fedora-release-identity-server \
-    && dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates \
+    && dnf -y install kernel dracut grub2-efi-x64 grub2-efi-x64-modules grub2-pc grub2-pc-modules shim-x64 passwd systemd ca-certificates glibc-locale-source glibc-langpack-en \
+    && dnf -y reinstall glibc-common \
+    && localedef -c -i en_US -f UTF-8 en_US.UTF-8 \
     && dnf clean all
