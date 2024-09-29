@@ -25,6 +25,7 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
 bootable::container::build::image() {
     local FILE
     FILE=$(readlink -e "$2") # one day suddenly Docker stopped recoginzing symlinks
+    export BOOTABLE_SOURCE_IMAGE
     docker build --file="$FILE" --tag="$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
     return $?
 }
