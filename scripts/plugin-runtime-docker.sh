@@ -21,11 +21,16 @@ BOOTABLE_DOCKER_BUILD_ARGS+=(
     "BOOTABLE_SOURCE_IMAGE"
 )
 
+__docker_export() {
+    export DOCKER_DEFAULT_PLATFORM="${BOOTABLE_DOCKER_DEFAULT_PLATFORM}"
+    export BOOTABLE_SOURCE_IMAGE
+}
+
 # Usage: $0 <context-dir> <file> <output-tag>
 bootable::container::build::image() {
     local FILE
     FILE=$(readlink -e "$2") # one day suddenly Docker stopped recoginzing symlinks
-    export BOOTABLE_SOURCE_IMAGE
+    __docker_export
     docker build --file="$FILE" --tag="$3" "${BOOTABLE_DOCKER_BUILD_ARGS[@]}" -- "$1"
     return $?
 }
@@ -37,6 +42,7 @@ bootable::container::exec() {
     local PWD=$1
     shift
 
+    __docker_export
     docker run --interactive --rm --privileged --hostname="$(uname -n)" --volume="$PWD:$PWD" --volume="/dev:/dev" --workdir="$PWD" -- "$TAG" "$@"
     return $?
 }
@@ -45,6 +51,8 @@ bootable::container::exec() {
 bootable::container::export::tar() {
     local TEMP_CONTAINER
     TEMP_CONTAINER=$(docker container create "$1")
+
+    __docker_export
     docker export "${TEMP_CONTAINER}" --output="$2"
     docker container rm "${TEMP_CONTAINER}"
     return 0
@@ -53,5 +61,6 @@ bootable::container::export::tar() {
 # Get the value of a label
 # Usage: $0 <tag> <label> <default-value>
 bootable::container::label::get() {
+    __docker_export
     docker image inspect "$1" | jq -r ".[0].Config.Labels.[\"$2\"] | select (.!=null)" | grep . || printf '%s\n' "$3"
 }
