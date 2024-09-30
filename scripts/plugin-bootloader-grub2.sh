@@ -171,46 +171,27 @@ bootable::plugin::bootloader::install() {
     fi
 
     # Update GRUB config
+    # Note:
+    # - symlink to /etc/grub{,2,2-efi}.cfg is not trustworthy
     >&2 printf "[*] GRUB: config\n"
-    if [ "${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DNF_SB}" == '1' ]; then
-        # EL8+
-        # /etc/grub2-efi.cfg links to ../boot/efi/EFI/almalinux/grub.cfg or ../boot/grub2/grub.cfg, but the symlink parent directory has not been created now
-        # https://forums.centos.org/viewtopic.php?t=78909#p331620
-        for file in "/etc/grub.cfg" "/etc/grub2.cfg" "/etc/grub2-efi.cfg"; do
-            if [ -L "${BOOTABLE_MOUNT_ROOT}${file}" ]; then
-                >&2 printf "[i] Using inferred GRUB2 config file path: %s\n" "${file}"
-                # shellcheck disable=SC2016
-                bootable::util:chroot "${BOOTABLE_MOUNT_ROOT}" "${GRUB_MKCONFIG[@]}" -o "${file}"
-            fi
-        done
+    # for legacy boot
+    mkdir -p "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_LEGACY}"
+    _grub2_generate_config "/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_LEGACY}/grub.cfg"
+    _grub2_legacy_compat_fix "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_LEGACY}/grub.cfg"
 
-        # Generate a stub at /boot/efi/EFI/<distro>/grub.cfg
-        # fix for *EL 9 where /etc/grub2.cfg and /etc/grub2-efi.cfg points to the same file
-        if [ ! -f "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}/grub.cfg" ]; then
-            mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}"
-            _grub2_generate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}/grub.cfg"
-        fi
-    else
-        # for legacy boot
-        mkdir -p "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_LEGACY}"
-        _grub2_generate_config "/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_LEGACY}/grub.cfg"
-
-        # redirect EFI config to legacy config
-        # Caveats for Canonical signed GRUB2 loader:
-        # - `/boot/efi/EFI/$id` will be a special phase 1 config
-        # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
-        # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
-        # https://askubuntu.com/a/1406590
-        mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}"
-        _grub2_generate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}/grub.cfg"
-        # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
-        # This can be debugged by using `set` in the recovery shell. Here's a workaround.
-        # This file is harmless for other distros.
-        # mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}"
-        # _grub2_generate_bootstrap_config "/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/grub.cfg"
-    fi
-
-    _grub2_legacy_compat_fix "${BOOTABLE_MOUNT_ROOT}/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/grub.cfg"
+    # redirect EFI config to legacy config
+    # Caveats for Canonical signed GRUB2 loader:
+    # - `/boot/efi/EFI/$id` will be a special phase 1 config
+    # - the actual config will be in `/boot/efi/EFI/ubuntu/grub.cfg`
+    # - GRUB installs with a non-default bootloader id will not be able to boot, unless a corresponding EFI entry is created
+    # https://askubuntu.com/a/1406590
+    mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}"
+    _grub2_generate_bootstrap_config "/boot/efi/EFI/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_DISTRO_EFI}/grub.cfg"
+    # Ubuntu noble: `prefix` is set to `(hd0,gpt2)/boot/grub' for an unknown reason, causing GRUB2 to enter recovery shell automatically, but `normal` works in the shell.
+    # This can be debugged by using `set` in the recovery shell. Here's a workaround.
+    # This file is harmless for other distros.
+    # mkdir -p -- "${BOOTABLE_MOUNT_ROOT}/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}"
+    # _grub2_generate_bootstrap_config "/boot/efi/boot/${BOOTABLE_PLUGIN_BOOTLOADER_GRUB2_CAVEAT_PREFIX}/grub.cfg"
 
     _grub2_unfuck_env
 }

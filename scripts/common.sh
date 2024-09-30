@@ -138,5 +138,5 @@ bootable::util:chroot() {
     shift
     >&2 printf "[i] chroot: %s %s\n" "${ROOTDIR}" "$*"
     # Debian Bullseye: need /sbin and /bin added to the PATH since it is not usrmerge'd yet
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin unshare --fork --mount --root "${ROOTDIR}" "$@"
+    PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" unshare --fork --mount --root "${ROOTDIR}" "$@"
 }
