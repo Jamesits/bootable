@@ -77,6 +77,12 @@ bootable::util::sysprep() {
     rm -fv --one-file-system "${ROOTDIR}/.dockerenv" "${ROOTDIR}/.containerenv"
     # remove machine ID
     rm -fv --one-file-system "${ROOTDIR}/etc/machine-id" "${ROOTDIR}/var/lib/dbus/machine-id"
+    # dbus-broker require /etc/machine-id file to exist
+    # https://access.redhat.com/solutions/7036987
+    printf "uninitialized\n" > "${ROOTDIR}/etc/machine-id"
+
+    # hostname
+    printf "localhost\n" > "${ROOTDIR}/etc/hostname"
 }
 
 # Bind mount file or directory $1 to $2
