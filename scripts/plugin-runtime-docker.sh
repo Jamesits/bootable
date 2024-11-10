@@ -64,5 +64,5 @@ bootable::container::export::tar() {
 # Usage: $0 <tag> <label> <default-value>
 bootable::container::label::get() {
     __docker_export
-    docker image inspect "$1" | jq -r ".[0].Config.Labels.[\"$2\"] | select (.!=null)" | grep . || printf '%s\n' "$3"
+    docker image inspect "$1" | jq -r ".[0].Config.Labels[\"$2\"] | select (.!=null)" | grep . || printf '%s\n' "$3"
 }
