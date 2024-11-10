@@ -8,10 +8,47 @@ on:
     - cron: "0 4 * * *"
 
 jobs:
-  build-toolchain:
+  toolchain:
+    name: "Toolchain"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: "./create_base_image.sh"
+      - run: "./create_toolchain_image.sh"
+
+  images:
+    name: "Image ${distro}"
+    runs-on: ubuntu-latest
+    needs: ["toolchain"]
+    strategy:
+      matrix:
+        distro:
+          - "almalinux/8"
+          - "almalinux/9"
+          - "alpinelinux/edge"
+          - "archlinux/rolling"
+          - "centos/7"
+          - "centos/8"
+          - "debian/buster"
+          - "debian/bullseye"
+          - "debian/bookworm"
+          - "debian/trixie"
+          - "debian/sid"
+          - "fedora/38"
+          - "fedora/39"
+          - "fedora/40"
+          - "fedora/rawhide"
+          - "rockylinux/8"
+          - "rockylinux/9"
+          - "ubuntu/bionic"
+          - "ubuntu/focal"
+          - "ubuntu/jammy"
+          - "ubuntu/noble"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+        TAG="jamesits/bootable:base-${distro//\//-}-grub2-latest"
+        ./create_base_image.sh "$distro" "${TAG}" "grub2"
