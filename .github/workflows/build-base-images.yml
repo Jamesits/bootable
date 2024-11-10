@@ -50,5 +50,5 @@ jobs:
         with:
           fetch-depth: 0
       - run: |
-        TAG="jamesits/bootable:base-${distro//\//-}-grub2-latest"
-        ./create_base_image.sh "$distro" "${TAG}" "grub2"
+          TAG="jamesits/bootable:base-${distro//\//-}-grub2-latest"
+          ./create_base_image.sh "$distro" "${TAG}" "grub2"
