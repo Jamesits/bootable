@@ -1,0 +1,17 @@
+name: "Build base images"
+
+on:
+  push:
+    - branches:
+      - "trunk"
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  build-toolchain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: "./create_base_image.sh"
