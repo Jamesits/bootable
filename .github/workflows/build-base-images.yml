@@ -16,6 +16,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: "./create_toolchain_image.sh"
+      # TODO: push the image
 
   images:
     name: "Image ${distro}"
@@ -50,5 +51,5 @@ jobs:
         with:
           fetch-depth: 0
       - run: |
-          TAG="jamesits/bootable:base-${distro//\//-}-grub2-latest"
-          ./create_base_image.sh "$distro" "${TAG}" "grub2"
+          ./create_base_image.sh "${distro}" "jamesits/bootable:base-${distro//\//-}-grub2-latest" "grub2"
+      # TODO: push the image
